@@ -1,0 +1,369 @@
+/*
+ Theme Name:   Fotoclub Perspectief
+ Theme URI:    https://github.com/
+ Description:  Child theme voor Twenty Twenty — homepage Fotoclub Perspectief.
+ Author:       Fotoclub Perspectief
+ Template:     twentytwenty
+ Version:      1.0.0
+ Text Domain:  fotoclubperspectief-child
+*/
+
+/* Homepage grid: 3 kolommen × 3 rijen */
+.fcp-home-grid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 1.25rem;
+	align-items: start;
+	max-width: var(--wp--custom--wide-size, 1200px);
+	margin-left: auto;
+	margin-right: auto;
+	padding: 0 1rem 2rem;
+}
+
+.fcp-home-grid .fcp-mededelingen {
+	grid-column: 1;
+	grid-row: 1;
+}
+
+.fcp-home-grid .fcp-uitgelicht {
+	grid-column: 2 / span 2;
+	grid-row: 1;
+}
+
+.fcp-home-grid .fcp-custom1 {
+	grid-column: 1;
+	grid-row: 2;
+}
+
+.fcp-home-grid .fcp-custom2 {
+	grid-column: 2;
+	grid-row: 2;
+}
+
+.fcp-home-grid .fcp-agenda {
+	grid-column: 3;
+	grid-row: 2;
+}
+
+.fcp-home-grid .fcp-cards {
+	grid-column: 1 / -1;
+	grid-row: 3;
+}
+
+@media (max-width: 782px) {
+	.fcp-home-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.fcp-home-grid .fcp-mededelingen,
+	.fcp-home-grid .fcp-uitgelicht,
+	.fcp-home-grid .fcp-custom1,
+	.fcp-home-grid .fcp-custom2,
+	.fcp-home-grid .fcp-agenda,
+	.fcp-home-grid .fcp-cards {
+		grid-column: 1;
+		grid-row: auto;
+	}
+}
+
+.fcp-block-title {
+	margin-top: 0;
+	font-size: 1.25rem;
+}
+
+.fcp-uitgelicht figure {
+	margin: 0;
+}
+
+.fcp-uitgelicht img {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+
+.fcp-uitgelicht figcaption {
+	margin-top: 0.5rem;
+	font-size: 0.95em;
+	color: #555;
+}
+
+.fcp-custom-image {
+	margin-top: 0.75rem;
+}
+
+.fcp-custom-image img {
+	max-width: 100%;
+	height: auto;
+}
+
+/* Agenda homepage */
+.fcp-agenda-home {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+.fcp-agenda-item {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+}
+
+.fcp-agenda-date {
+	display: inline-block;
+	padding: 0.25rem 0.5rem;
+	border-radius: 4px;
+	font-weight: 600;
+}
+
+.fcp-agenda--club .fcp-agenda-date {
+	background: #1e3a5f;
+	color: #fff;
+}
+
+.fcp-agenda--other .fcp-agenda-date {
+	background: #c8d6e5;
+	color: #222;
+}
+
+.fcp-agenda-desc {
+	font-size: 0.95em;
+	line-height: 1.45;
+}
+
+.fcp-agenda-desc p {
+	margin: 0 0 0.5em;
+}
+
+/* Vier cards */
+.fcp-cards-inner {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 1rem;
+}
+
+@media (max-width: 782px) {
+	.fcp-cards-inner {
+		grid-template-columns: 1fr 1fr;
+	}
+}
+
+@media (max-width: 500px) {
+	.fcp-cards-inner {
+		grid-template-columns: 1fr;
+	}
+}
+
+.fcp-card {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	text-align: center;
+	padding: 0;
+	overflow: hidden;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	text-decoration: none;
+	color: inherit;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.fcp-card__media {
+	display: block;
+	aspect-ratio: 4 / 3;
+	overflow: hidden;
+	background: #f0f0f0;
+}
+
+.fcp-card__img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+	vertical-align: middle;
+}
+
+.fcp-card__label {
+	display: block;
+	padding: 1rem 0.75rem;
+}
+
+.fcp-card:hover,
+.fcp-card:focus {
+	background: #f5f5f5;
+	border-color: #bbb;
+}
+
+.fcp-card--static {
+	cursor: default;
+	color: #666;
+}
+
+.fcp-card--static .fcp-card__label {
+	color: inherit;
+}
+
+/*
+Theme Name: Twenty Twenty Child
+Theme URL: https://fotoclubperspectief.nl/
+Description: Twenty Twenty Child Theme
+Author: Herman Kremer
+Author URL: https://herman-kremer.nl
+Template: twentytwenty
+Version: 1.0.0
+Text Domain: twentytwenty-child
+*/ 
+/* Custom CSS goes after this line */
+
+/*
+h2.entry-title {
+	background-color:#ff0000;
+}
+h1.entry-title {
+	background-color:#ff0000;	
+}
+*/
+.has-green-background-color {
+	background-color: #b1ead4;
+  }
+  .has-green-color {
+	color: #b1ead4;
+  }
+  .has-yellow-background-color {
+	background-color: #fee95c;
+  }
+  .has-yellow-color {
+	color: #fee95c;
+  }
+  .has-lightyellow-background-color {
+	background-color: #FCFBDE;
+  }
+  .has-lightyellow-color {
+	color: #FCFBDE;
+  }
+  
+  .has-accentfc-background-color {
+	background-color: #008b8b;
+  }
+  .has-accentfc-color {
+	color: #008b8b;
+  }
+
+
+/* 
+ ************************ EXTRA CSS THEME ************************
+extra css theme inline styles 
+*/
+.color-accent,.color-accent-hover:hover,.color-accent-hover:focus,:root .has-accent-color,.has-drop-cap:not(:focus):first-letter,.wp-block-button.is-style-outline,a {
+    color: #e22658;
+}
+
+blockquote,.border-color-accent,.border-color-accent-hover:hover,.border-color-accent-hover:focus {
+    border-color: #e22658;
+}
+
+button,.button,.faux-button,.wp-block-button__link,.wp-block-file .wp-block-file__button,input[type="button"],input[type="reset"],input[type="submit"],.bg-accent,.bg-accent-hover:hover,.bg-accent-hover:focus,:root .has-accent-background-color,.comment-reply-link {
+    background-color: #e22658;
+}
+
+.fill-children-accent,.fill-children-accent * {
+    fill: #e22658;
+}
+
+:root .has-background-color,button,.button,.faux-button,.wp-block-button__link,.wp-block-file__button,input[type="button"],input[type="reset"],input[type="submit"],.wp-block-button,.comment-reply-link,.has-background.has-primary-background-color:not(.has-text-color),.has-background.has-primary-background-color *:not(.has-text-color),.has-background.has-accent-background-color:not(.has-text-color),.has-background.has-accent-background-color *:not(.has-text-color) {
+    color: #ffffff;
+}
+
+:root .has-background-background-color {
+    background-color: #ffffff;
+}
+
+body,.entry-title a,:root .has-primary-color {
+    color: #000000;
+}
+
+:root .has-primary-background-color {
+    background-color: #000000;
+}
+
+cite,figcaption,.wp-caption-text,.post-meta,.entry-content .wp-block-archives li,.entry-content .wp-block-categories li,.entry-content .wp-block-latest-posts li,.wp-block-latest-comments__comment-date,.wp-block-latest-posts__post-date,.wp-block-embed figcaption,.wp-block-image figcaption,.wp-block-pullquote cite,.comment-metadata,.comment-respond .comment-notes,.comment-respond .logged-in-as,.pagination .dots,.entry-content hr:not(.has-background),hr.styled-separator,:root .has-secondary-color {
+    color: #6d6d6d;
+}
+
+:root .has-secondary-background-color {
+    background-color: #6d6d6d;
+}
+
+pre,fieldset,input,textarea,table,table *,hr {
+    border-color: #dbdbdb;
+}
+
+caption,code,code,kbd,samp,.wp-block-table.is-style-stripes tbody tr:nth-child(odd),:root .has-subtle-background-background-color {
+    background-color: #dbdbdb;
+}
+
+.wp-block-table.is-style-stripes {
+    border-bottom-color: #dbdbdb;
+}
+
+.wp-block-latest-posts.is-grid li {
+    border-top-color: #dbdbdb;
+}
+
+:root .has-subtle-background-color {
+    color: #dbdbdb;
+}
+
+body:not(.overlay-header) .primary-menu > li > a,body:not(.overlay-header) .primary-menu > li > .icon,.modal-menu a,.footer-menu a, .footer-widgets a:where(:not(.wp-block-button__link)),#site-footer .wp-block-button.is-style-outline,.wp-block-pullquote:before,.singular:not(.overlay-header) .entry-header a,.archive-header a,.header-footer-group .color-accent,.header-footer-group .color-accent-hover:hover {
+    color: #2d000a;
+}
+
+.social-icons a,#site-footer button:not(.toggle),#site-footer .button,#site-footer .faux-button,#site-footer .wp-block-button__link,#site-footer .wp-block-file__button,#site-footer input[type="button"],#site-footer input[type="reset"],#site-footer input[type="submit"] {
+    background-color: #2d000a;
+}
+
+.social-icons a,body:not(.overlay-header) .primary-menu ul,.header-footer-group button,.header-footer-group .button,.header-footer-group .faux-button,.header-footer-group .wp-block-button:not(.is-style-outline) .wp-block-button__link,.header-footer-group .wp-block-file__button,.header-footer-group input[type="button"],.header-footer-group input[type="reset"],.header-footer-group input[type="submit"] {
+    color: #008b8b;
+}
+
+#site-header,.footer-nav-widgets-wrapper,#site-footer,.menu-modal,.menu-modal-inner,.search-modal-inner,.archive-header,.singular .entry-header,.singular .featured-media:before,.wp-block-pullquote:before {
+    background-color: #008b8b;
+}
+
+.header-footer-group,body:not(.overlay-header) #site-header .toggle,.menu-modal .toggle {
+    color: #000000;
+}
+
+body:not(.overlay-header) .primary-menu ul {
+    background-color: #000000;
+}
+
+body:not(.overlay-header) .primary-menu > li > ul:after {
+    border-bottom-color: #000000;
+}
+
+body:not(.overlay-header) .primary-menu ul ul:after {
+    border-left-color: #000000;
+}
+
+.site-description,body:not(.overlay-header) .toggle-inner .toggle-text,.widget .post-date,.widget .rss-date,.widget_archive li,.widget_categories li,.widget cite,.widget_pages li,.widget_meta li,.widget_nav_menu li,.powered-by-wordpress,.footer-credits .privacy-policy,.to-the-top,.singular .entry-header .post-meta,.singular:not(.overlay-header) .entry-header .post-meta a {
+    color: #000000;
+}
+
+.header-footer-group pre,.header-footer-group fieldset,.header-footer-group input,.header-footer-group textarea,.header-footer-group table,.header-footer-group table *,.footer-nav-widgets-wrapper,#site-footer,.menu-modal nav *,.footer-widgets-outer-wrapper,.footer-top {
+    border-color: #007070;
+}
+
+.header-footer-group table caption,body:not(.overlay-header) .header-inner .toggle-wrapper::before {
+    background-color: #007070;
+}
+
+.overlay-header .header-inner {
+    color: #000000;
+}
+
+.cover-header .entry-header * {
+    color: #000000;
+}

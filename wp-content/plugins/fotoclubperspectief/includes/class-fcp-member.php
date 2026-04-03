@@ -1,0 +1,351 @@
+<?php
+/**
+ * Leden (CPT fcp_member).
+ *
+ * @package FotoclubPerspectief
+ */
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Class FCP_Member
+ */
+class FCP_Member {
+
+	const POST_TYPE = 'fcp_member';
+
+	/**
+	 * Meta field definitions: key => [ type string|bool ]
+	 *
+	 * @var array<string, string>
+	 */
+	public static function meta_keys() {
+		return array(
+			'_fcp_voornaam'              => 'string',
+			'_fcp_achternaam'            => 'string',
+			'_fcp_lidnr_fotobond'        => 'string',
+			'_fcp_bar'                   => 'bool',
+			'_fcp_adres'                 => 'string',
+			'_fcp_postcode'              => 'string',
+			'_fcp_plaats'                => 'string',
+			'_fcp_telefoon'              => 'string',
+			'_fcp_email'                 => 'string',
+			'_fcp_bestuur'               => 'bool',
+			'_fcp_programma_cie'         => 'bool',
+			'_fcp_tentoonstelling_cie'   => 'bool',
+			'_fcp_wedstrijden_cie'       => 'bool',
+			'_fcp_archief_foto_cie'      => 'bool',
+			'_fcp_website_cie'           => 'bool',
+			'_fcp_redactie_cie'          => 'bool',
+			'_fcp_natuur_werkgroep'      => 'bool',
+			'_fcp_portret_werkgroep'     => 'bool',
+			'_fcp_straat_werkgroep'      => 'bool',
+			'_fcp_architectuur_werkgroep' => 'bool',
+			'_fcp_laptop_bediening'      => 'bool',
+		);
+	}
+
+	/**
+	 * Init hooks.
+	 */
+	public static function init() {
+		add_action( 'init', array( __CLASS__, 'register_post_type' ) );
+		add_action( 'add_meta_boxes', array( __CLASS__, 'add_meta_boxes' ) );
+		add_action( 'save_post_' . self::POST_TYPE, array( __CLASS__, 'save_post' ), 10, 2 );
+		add_filter( 'manage_' . self::POST_TYPE . '_posts_columns', array( __CLASS__, 'posts_columns' ) );
+		add_action( 'manage_' . self::POST_TYPE . '_posts_custom_column', array( __CLASS__, 'posts_custom_column' ), 10, 2 );
+		add_filter( 'manage_edit-' . self::POST_TYPE . '_sortable_columns', array( __CLASS__, 'sortable_columns' ) );
+		add_action( 'pre_get_posts', array( __CLASS__, 'admin_sort_by_achternaam' ) );
+	}
+
+	/**
+	 * Sort list table by achternaam when requested.
+	 *
+	 * @param WP_Query $query Query.
+	 */
+	public static function admin_sort_by_achternaam( $query ) {
+		if ( ! is_admin() || ! $query->is_main_query() ) {
+			return;
+		}
+		if ( self::POST_TYPE !== $query->get( 'post_type' ) ) {
+			return;
+		}
+		if ( 'fcp_achternaam' !== $query->get( 'orderby' ) ) {
+			return;
+		}
+		$query->set( 'meta_key', '_fcp_achternaam' );
+		$query->set( 'orderby', 'meta_value' );
+	}
+
+	/**
+	 * Register CPT.
+	 */
+	public static function register_post_type() {
+		$labels = array(
+			'name'               => __( 'Leden', 'fotoclubperspectief' ),
+			'singular_name'      => __( 'Lid', 'fotoclubperspectief' ),
+			'add_new'            => __( 'Nieuw lid', 'fotoclubperspectief' ),
+			'add_new_item'       => __( 'Nieuw lid toevoegen', 'fotoclubperspectief' ),
+			'edit_item'          => __( 'Lid bewerken', 'fotoclubperspectief' ),
+			'new_item'           => __( 'Nieuw lid', 'fotoclubperspectief' ),
+			'view_item'          => __( 'Lid bekijken', 'fotoclubperspectief' ),
+			'search_items'       => __( 'Leden zoeken', 'fotoclubperspectief' ),
+			'not_found'          => __( 'Geen leden gevonden', 'fotoclubperspectief' ),
+			'not_found_in_trash' => __( 'Geen leden in prullenbak', 'fotoclubperspectief' ),
+			'menu_name'          => __( 'Leden', 'fotoclubperspectief' ),
+		);
+
+		register_post_type(
+			self::POST_TYPE,
+			array(
+				'labels'              => $labels,
+				'public'              => true,
+				'publicly_queryable'  => false,
+				'show_ui'             => true,
+				'show_in_menu'        => true,
+				'menu_icon'           => 'dashicons-groups',
+				'capability_type'     => 'post',
+				'map_meta_cap'        => true,
+				'hierarchical'        => false,
+				'supports'            => array( 'title' ),
+				'has_archive'         => false,
+				'rewrite'             => false,
+				'query_var'           => false,
+				'exclude_from_search' => true,
+			)
+		);
+	}
+
+	/**
+	 * Meta boxes.
+	 */
+	public static function add_meta_boxes() {
+		add_meta_box(
+			'fcp_member_details',
+			__( 'Gegevens lid', 'fotoclubperspectief' ),
+			array( __CLASS__, 'render_meta_box' ),
+			self::POST_TYPE,
+			'normal',
+			'high'
+		);
+	}
+
+	/**
+	 * Render admin form.
+	 *
+	 * @param WP_Post $post Post.
+	 */
+	public static function render_meta_box( $post ) {
+		wp_nonce_field( 'fcp_member_save', 'fcp_member_nonce' );
+
+		$keys = self::meta_keys();
+		?>
+		<table class="form-table fcp-member-fields">
+			<tbody>
+				<tr>
+					<th><label for="fcp_voornaam"><?php esc_html_e( 'Voornaam', 'fotoclubperspectief' ); ?></label></th>
+					<td><input type="text" class="regular-text" id="fcp_voornaam" name="fcp_voornaam" value="<?php echo esc_attr( get_post_meta( $post->ID, '_fcp_voornaam', true ) ); ?>" /></td>
+				</tr>
+				<tr>
+					<th><label for="fcp_achternaam"><?php esc_html_e( 'Achternaam', 'fotoclubperspectief' ); ?></label></th>
+					<td><input type="text" class="regular-text" id="fcp_achternaam" name="fcp_achternaam" value="<?php echo esc_attr( get_post_meta( $post->ID, '_fcp_achternaam', true ) ); ?>" /></td>
+				</tr>
+				<tr>
+					<th><label for="fcp_lidnr_fotobond"><?php esc_html_e( 'Lidnr fotobond', 'fotoclubperspectief' ); ?></label></th>
+					<td><input type="text" class="regular-text" id="fcp_lidnr_fotobond" name="fcp_lidnr_fotobond" value="<?php echo esc_attr( get_post_meta( $post->ID, '_fcp_lidnr_fotobond', true ) ); ?>" /></td>
+				</tr>
+				<tr>
+					<th><?php esc_html_e( 'Bar', 'fotoclubperspectief' ); ?></th>
+					<td><label><input type="checkbox" name="fcp_bar" value="1" <?php checked( get_post_meta( $post->ID, '_fcp_bar', true ), '1' ); ?> /> <?php esc_html_e( 'Ja', 'fotoclubperspectief' ); ?></label></td>
+				</tr>
+				<tr>
+					<th><label for="fcp_adres"><?php esc_html_e( 'Adres', 'fotoclubperspectief' ); ?></label></th>
+					<td><input type="text" class="large-text" id="fcp_adres" name="fcp_adres" value="<?php echo esc_attr( get_post_meta( $post->ID, '_fcp_adres', true ) ); ?>" /></td>
+				</tr>
+				<tr>
+					<th><label for="fcp_postcode"><?php esc_html_e( 'Postcode', 'fotoclubperspectief' ); ?></label></th>
+					<td><input type="text" class="regular-text" id="fcp_postcode" name="fcp_postcode" value="<?php echo esc_attr( get_post_meta( $post->ID, '_fcp_postcode', true ) ); ?>" /></td>
+				</tr>
+				<tr>
+					<th><label for="fcp_plaats"><?php esc_html_e( 'Plaats', 'fotoclubperspectief' ); ?></label></th>
+					<td><input type="text" class="regular-text" id="fcp_plaats" name="fcp_plaats" value="<?php echo esc_attr( get_post_meta( $post->ID, '_fcp_plaats', true ) ); ?>" /></td>
+				</tr>
+				<tr>
+					<th><label for="fcp_telefoon"><?php esc_html_e( 'Telefoon', 'fotoclubperspectief' ); ?></label></th>
+					<td><input type="text" class="regular-text" id="fcp_telefoon" name="fcp_telefoon" value="<?php echo esc_attr( get_post_meta( $post->ID, '_fcp_telefoon', true ) ); ?>" /></td>
+				</tr>
+				<tr>
+					<th><label for="fcp_email"><?php esc_html_e( 'E-mail', 'fotoclubperspectief' ); ?></label></th>
+					<td><input type="email" class="regular-text" id="fcp_email" name="fcp_email" value="<?php echo esc_attr( get_post_meta( $post->ID, '_fcp_email', true ) ); ?>" /></td>
+				</tr>
+			</tbody>
+		</table>
+		<h4><?php esc_html_e( 'Commissies en werkgroepen', 'fotoclubperspectief' ); ?></h4>
+		<table class="form-table">
+			<tbody>
+				<?php
+				$checks = array(
+					'fcp_bestuur'               => __( 'Bestuur', 'fotoclubperspectief' ),
+					'fcp_programma_cie'         => __( 'Programma cie', 'fotoclubperspectief' ),
+					'fcp_tentoonstelling_cie'   => __( 'Tentoonstelling cie', 'fotoclubperspectief' ),
+					'fcp_wedstrijden_cie'       => __( 'Wedstrijden cie', 'fotoclubperspectief' ),
+					'fcp_archief_foto_cie'      => __( 'Archief foto cie', 'fotoclubperspectief' ),
+					'fcp_website_cie'           => __( 'Website cie', 'fotoclubperspectief' ),
+					'fcp_redactie_cie'          => __( 'Redactie cie', 'fotoclubperspectief' ),
+					'fcp_natuur_werkgroep'      => __( 'Natuur werkgroep', 'fotoclubperspectief' ),
+					'fcp_portret_werkgroep'     => __( 'Portret werkgroep', 'fotoclubperspectief' ),
+					'fcp_straat_werkgroep'      => __( 'Straat werkgroep', 'fotoclubperspectief' ),
+					'fcp_architectuur_werkgroep' => __( 'Architectuur werkgroep', 'fotoclubperspectief' ),
+					'fcp_laptop_bediening'      => __( 'Laptop bediening', 'fotoclubperspectief' ),
+				);
+				foreach ( $checks as $name => $label ) {
+					$key = '_' . $name;
+					?>
+					<tr>
+						<th><?php echo esc_html( $label ); ?></th>
+						<td><label><input type="checkbox" name="<?php echo esc_attr( $name ); ?>" value="1" <?php checked( get_post_meta( $post->ID, $key, true ), '1' ); ?> /> <?php esc_html_e( 'Ja', 'fotoclubperspectief' ); ?></label></td>
+					</tr>
+					<?php
+				}
+				?>
+			</tbody>
+		</table>
+		<?php
+	}
+
+	/**
+	 * Save meta.
+	 *
+	 * @param int     $post_id Post ID.
+	 * @param WP_Post $post    Post.
+	 */
+	public static function save_post( $post_id, $post ) {
+		if ( ! isset( $_POST['fcp_member_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['fcp_member_nonce'] ) ), 'fcp_member_save' ) ) {
+			return;
+		}
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return;
+		}
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			return;
+		}
+
+		$voornaam   = isset( $_POST['fcp_voornaam'] ) ? sanitize_text_field( wp_unslash( $_POST['fcp_voornaam'] ) ) : '';
+		$achternaam = isset( $_POST['fcp_achternaam'] ) ? sanitize_text_field( wp_unslash( $_POST['fcp_achternaam'] ) ) : '';
+
+		update_post_meta( $post_id, '_fcp_voornaam', $voornaam );
+		update_post_meta( $post_id, '_fcp_achternaam', $achternaam );
+		update_post_meta( $post_id, '_fcp_lidnr_fotobond', isset( $_POST['fcp_lidnr_fotobond'] ) ? sanitize_text_field( wp_unslash( $_POST['fcp_lidnr_fotobond'] ) ) : '' );
+		update_post_meta( $post_id, '_fcp_bar', ! empty( $_POST['fcp_bar'] ) ? '1' : '0' );
+		update_post_meta( $post_id, '_fcp_adres', isset( $_POST['fcp_adres'] ) ? sanitize_text_field( wp_unslash( $_POST['fcp_adres'] ) ) : '' );
+		update_post_meta( $post_id, '_fcp_postcode', isset( $_POST['fcp_postcode'] ) ? sanitize_text_field( wp_unslash( $_POST['fcp_postcode'] ) ) : '' );
+		update_post_meta( $post_id, '_fcp_plaats', isset( $_POST['fcp_plaats'] ) ? sanitize_text_field( wp_unslash( $_POST['fcp_plaats'] ) ) : '' );
+		update_post_meta( $post_id, '_fcp_telefoon', isset( $_POST['fcp_telefoon'] ) ? sanitize_text_field( wp_unslash( $_POST['fcp_telefoon'] ) ) : '' );
+		update_post_meta( $post_id, '_fcp_email', isset( $_POST['fcp_email'] ) ? sanitize_email( wp_unslash( $_POST['fcp_email'] ) ) : '' );
+
+		$bool_fields = array(
+			'fcp_bestuur',
+			'fcp_programma_cie',
+			'fcp_tentoonstelling_cie',
+			'fcp_wedstrijden_cie',
+			'fcp_archief_foto_cie',
+			'fcp_website_cie',
+			'fcp_redactie_cie',
+			'fcp_natuur_werkgroep',
+			'fcp_portret_werkgroep',
+			'fcp_straat_werkgroep',
+			'fcp_architectuur_werkgroep',
+			'fcp_laptop_bediening',
+		);
+		foreach ( $bool_fields as $field ) {
+			update_post_meta( $post_id, '_' . $field, ! empty( $_POST[ $field ] ) ? '1' : '0' );
+		}
+
+		$title = trim( $voornaam . ' ' . $achternaam );
+		if ( '' === $title ) {
+			$title = __( '(Naamloos lid)', 'fotoclubperspectief' );
+		}
+		remove_action( 'save_post_' . self::POST_TYPE, array( __CLASS__, 'save_post' ), 10 );
+		wp_update_post(
+			array(
+				'ID'         => $post_id,
+				'post_title' => $title,
+			)
+		);
+		add_action( 'save_post_' . self::POST_TYPE, array( __CLASS__, 'save_post' ), 10, 2 );
+	}
+
+	/**
+	 * Admin columns.
+	 *
+	 * @param array $columns Columns.
+	 * @return array
+	 */
+	public static function posts_columns( $columns ) {
+		$new = array();
+		foreach ( $columns as $key => $label ) {
+			$new[ $key ] = $label;
+			if ( 'title' === $key ) {
+				$new['fcp_achternaam'] = __( 'Achternaam', 'fotoclubperspectief' );
+			}
+		}
+		return $new;
+	}
+
+	/**
+	 * Column content.
+	 *
+	 * @param string $column Column.
+	 * @param int    $post_id Post ID.
+	 */
+	public static function posts_custom_column( $column, $post_id ) {
+		if ( 'fcp_achternaam' === $column ) {
+			echo esc_html( get_post_meta( $post_id, '_fcp_achternaam', true ) );
+		}
+	}
+
+	/**
+	 * Sortable columns.
+	 *
+	 * @param array $columns Columns.
+	 * @return array
+	 */
+	public static function sortable_columns( $columns ) {
+		$columns['fcp_achternaam'] = 'fcp_achternaam';
+		return $columns;
+	}
+
+	/**
+	 * Get display name (voornaam) for agenda selects.
+	 *
+	 * @param int $post_id Member post ID.
+	 * @return string
+	 */
+	public static function get_voornaam( $post_id ) {
+		$v = get_post_meta( $post_id, '_fcp_voornaam', true );
+		if ( $v ) {
+			return $v;
+		}
+		$t = get_the_title( $post_id );
+		return $t ? $t : '';
+	}
+
+	/**
+	 * Query all members sorted by achternaam, voornaam.
+	 *
+	 * @return WP_Post[]
+	 */
+	public static function get_members_sorted() {
+		$q = new WP_Query(
+			array(
+				'post_type'      => self::POST_TYPE,
+				'post_status'    => 'publish',
+				'posts_per_page' => -1,
+				'orderby'        => 'meta_value',
+				'meta_key'       => '_fcp_achternaam',
+				'order'          => 'ASC',
+			)
+		);
+		return $q->posts;
+	}
+}
