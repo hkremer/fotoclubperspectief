@@ -257,3 +257,5 @@ overlay tekst #000000
 
 ### instellingen
 lezen selecteer nieuwe homepage pagina
+
+### Home menu item aanpassen

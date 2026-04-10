@@ -20,6 +20,24 @@ function fcp_get_home_options() {
 }
 
 /**
+ * Whether plugin homepage layout is enabled.
+ *
+ * @return bool
+ */
+function fcp_is_homepage_enabled() {
+	$o       = fcp_get_home_options();
+	$enabled = ! empty( $o['enable_homepage'] );
+
+	/**
+	 * Filter whether the plugin homepage layout is active.
+	 *
+	 * @param bool  $enabled Current state.
+	 * @param array $options Full homepage options.
+	 */
+	return (bool) apply_filters( 'fcp_enable_homepage_layout', $enabled, $o );
+}
+
+/**
  * Card links for homepage row (filterable).
  *
  * @return array<string,string> Keys: portret, natuur, straat, architectuur.

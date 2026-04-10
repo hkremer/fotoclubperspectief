@@ -10,6 +10,7 @@ defined( 'ABSPATH' ) || exit;
 get_header();
 
 $opt = function_exists( 'fcp_get_home_options' ) ? fcp_get_home_options() : array();
+$use_fcp_home = function_exists( 'fcp_is_homepage_enabled' ) ? fcp_is_homepage_enabled() : false;
 $defaults = array(
 	'featured_image_id' => 0,
 	'featured_caption'  => '',
@@ -43,6 +44,7 @@ $card_labels = array(
 				<header class="entry-header has-text-align-center">
 					<?php the_title( '<h1 class="entry-title">', '</h1>' ); ?>
 				</header>
+				<?php if ( $use_fcp_home ) : ?>
 				<div class="fcp-home-grid">
 					<section class="fcp-cell fcp-mededelingen" aria-labelledby="fcp-mededelingen-heading">
 						<h2 id="fcp-mededelingen-heading" class="fcp-block-title"><?php esc_html_e( 'Mededelingen', 'fotoclubperspectief' ); ?></h2>
@@ -88,7 +90,7 @@ $card_labels = array(
 					</section>
 
 					<section class="fcp-cell fcp-custom1" aria-labelledby="fcp-ct1-heading">
-						<h2 id="fcp-ct1-heading" class="fcp-block-title"><?php echo $opt['ct1_title'] ? esc_html( $opt['ct1_title'] ) : esc_html__( 'Custom text 1', 'fotoclubperspectief' ); ?></h2>
+						<h2 id="fcp-ct1-heading" class="fcp-block-title"><?php echo $opt['ct1_title'] ? esc_html( $opt['ct1_title'] ) : esc_html__( 'Linker blok', 'fotoclubperspectief' ); ?></h2>
 						<div class="fcp-custom-body"><?php echo $opt['ct1_content'] ? apply_filters( 'the_content', $opt['ct1_content'] ) : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 						<?php
 						$i1 = (int) $opt['ct1_image_id'];
@@ -99,7 +101,7 @@ $card_labels = array(
 					</section>
 
 					<section class="fcp-cell fcp-custom2" aria-labelledby="fcp-ct2-heading">
-						<h2 id="fcp-ct2-heading" class="fcp-block-title"><?php echo $opt['ct2_title'] ? esc_html( $opt['ct2_title'] ) : esc_html__( 'Custom text 2', 'fotoclubperspectief' ); ?></h2>
+						<h2 id="fcp-ct2-heading" class="fcp-block-title"><?php echo $opt['ct2_title'] ? esc_html( $opt['ct2_title'] ) : esc_html__( 'Midden blok', 'fotoclubperspectief' ); ?></h2>
 						<div class="fcp-custom-body"><?php echo $opt['ct2_content'] ? apply_filters( 'the_content', $opt['ct2_content'] ) : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 						<?php
 						$i2 = (int) $opt['ct2_image_id'];
@@ -152,6 +154,7 @@ $card_labels = array(
 						</div>
 					</section>
 				</div>
+				<?php endif; ?>
 				<div class="post-inner">
 					<div class="entry-content">
 						<?php the_content(); ?>

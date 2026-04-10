@@ -8,46 +8,60 @@
  Text Domain:  fotoclubperspectief-child
 */
 
-/* Homepage grid: 3 kolommen × 3 rijen */
+/* Homepage grid: 3 kolommen × 3 rijen — geen gap: vlakken sluiten aan; padding op .fcp-cell voor inhoud */
 .fcp-home-grid {
+	/* Eén waarde voor binnenruimte van alle grid-vlakken (verticaal horizontaal) */
+	--fcp-cell-padding: 1.25rem 1.5rem;
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
-	gap: 1.25rem;
-	align-items: start;
+	gap: 0;
+	align-items: stretch;
 	max-width: var(--wp--custom--wide-size, 1200px);
 	margin-left: auto;
 	margin-right: auto;
 	padding: 0 1rem 2rem;
 }
 
+.fcp-home-grid > .fcp-cell {
+	box-sizing: border-box;
+	min-height: 0;
+	padding: var(--fcp-cell-padding);
+}
+
 .fcp-home-grid .fcp-mededelingen {
 	grid-column: 1;
 	grid-row: 1;
+	background-color: #008b8b;
 }
 
 .fcp-home-grid .fcp-uitgelicht {
 	grid-column: 2 / span 2;
 	grid-row: 1;
+	background-color: #fcfbdE;
 }
 
 .fcp-home-grid .fcp-custom1 {
 	grid-column: 1;
 	grid-row: 2;
+	background-color: #fcfbdE;
 }
 
 .fcp-home-grid .fcp-custom2 {
 	grid-column: 2;
 	grid-row: 2;
+	background-color: #b1ead4;
 }
 
 .fcp-home-grid .fcp-agenda {
 	grid-column: 3;
 	grid-row: 2;
+	background-color: #008b8b;
 }
 
 .fcp-home-grid .fcp-cards {
 	grid-column: 1 / -1;
 	grid-row: 3;
+	background-color: #fee95c;
 }
 
 @media (max-width: 782px) {

@@ -21,6 +21,7 @@ class FCP_Home_Settings {
 	 */
 	public static function defaults() {
 		return array(
+			'enable_homepage'   => 0,
 			'featured_image_id' => 0,
 			'featured_caption'  => '',
 			'ct1_title'         => '',
@@ -92,6 +93,7 @@ class FCP_Home_Settings {
 			return $prev;
 		}
 
+		$clean['enable_homepage'] = isset( $input['enable_homepage'] ) ? 1 : 0;
 		$clean['featured_image_id'] = isset( $input['featured_image_id'] ) ? absint( $input['featured_image_id'] ) : 0;
 		$clean['featured_caption']  = isset( $input['featured_caption'] ) ? sanitize_text_field( wp_unslash( $input['featured_caption'] ) ) : '';
 
@@ -210,6 +212,25 @@ class FCP_Home_Settings {
 			<h1><?php esc_html_e( 'Fotoclub homepage', 'fotoclubperspectief' ); ?></h1>
 			<form method="post" action="options.php">
 				<?php settings_fields( 'fcp_home_group' ); ?>
+				<h2><?php esc_html_e( 'Activatie', 'fotoclubperspectief' ); ?></h2>
+				<table class="form-table">
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Nieuwe homepage activeren', 'fotoclubperspectief' ); ?></th>
+						<td>
+							<label for="fcp_enable_homepage">
+								<input
+									type="checkbox"
+									id="fcp_enable_homepage"
+									name="<?php echo esc_attr( self::OPTION_NAME ); ?>[enable_homepage]"
+									value="1"
+									<?php checked( ! empty( $o['enable_homepage'] ) ); ?>
+								/>
+								<?php esc_html_e( 'Gebruik de nieuwe homepage-secties van de plugin op de voorpagina.', 'fotoclubperspectief' ); ?>
+							</label>
+							<p class="description"><?php esc_html_e( 'Standaard uit, zodat installeren van de plugin de huidige homepage niet direct wijzigt.', 'fotoclubperspectief' ); ?></p>
+						</td>
+					</tr>
+				</table>
 				<h2><?php esc_html_e( 'Uitgelicht', 'fotoclubperspectief' ); ?></h2>
 				<table class="form-table">
 					<tr>
@@ -222,7 +243,7 @@ class FCP_Home_Settings {
 					</tr>
 				</table>
 
-				<h2><?php esc_html_e( 'Custom text 1', 'fotoclubperspectief' ); ?></h2>
+				<h2><?php esc_html_e( 'Linker blok', 'fotoclubperspectief' ); ?></h2>
 				<table class="form-table">
 					<tr>
 						<th><label for="fcp_ct1t"><?php esc_html_e( 'Kop', 'fotoclubperspectief' ); ?></label></th>
@@ -238,7 +259,7 @@ class FCP_Home_Settings {
 					</tr>
 				</table>
 
-				<h2><?php esc_html_e( 'Custom text 2', 'fotoclubperspectief' ); ?></h2>
+				<h2><?php esc_html_e( 'Midden blok', 'fotoclubperspectief' ); ?></h2>
 				<table class="form-table">
 					<tr>
 						<th><label for="fcp_ct2t"><?php esc_html_e( 'Kop', 'fotoclubperspectief' ); ?></label></th>
