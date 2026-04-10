@@ -17,6 +17,34 @@ class FCP_Shortcodes {
 	 */
 	public static function init() {
 		add_shortcode( 'fcp_ledenlijst', array( __CLASS__, 'ledenlijst' ) );
+		add_action( 'wp', array( __CLASS__, 'maybe_mark_ledenlijst_noindex' ) );
+	}
+
+	/**
+	 * Add noindex on pages using the ledenlijst shortcode.
+	 */
+	public static function maybe_mark_ledenlijst_noindex() {
+		if ( ! is_singular() ) {
+			return;
+		}
+
+		$post = get_queried_object();
+		if ( ! ( $post instanceof WP_Post ) ) {
+			return;
+		}
+
+		if ( ! has_shortcode( (string) $post->post_content, 'fcp_ledenlijst' ) ) {
+			return;
+		}
+
+		add_action( 'wp_head', array( __CLASS__, 'print_noindex_meta' ), 1 );
+	}
+
+	/**
+	 * Print robots noindex meta tag.
+	 */
+	public static function print_noindex_meta() {
+		echo "<meta name=\"robots\" content=\"noindex, nofollow\" />\n";
 	}
 
 	/**
@@ -26,6 +54,15 @@ class FCP_Shortcodes {
 	 * @return string
 	 */
 	public static function ledenlijst( $atts ) {
+		if ( ! is_user_logged_in() ) {
+			$login_url = wp_login_url( get_permalink() );
+			return '<p class="fcp-ledenlijst-login-required">' . sprintf(
+				/* translators: %s login URL */
+				esc_html__( 'De ledenlijst is alleen beschikbaar voor ingelogde leden. %s', 'fotoclubperspectief' ),
+				'<a href="' . esc_url( $login_url ) . '">' . esc_html__( 'Log hier in', 'fotoclubperspectief' ) . '</a>'
+			) . '</p>';
+		}
+
 		$atts = shortcode_atts(
 			array(
 				'show_contact' => '1',
