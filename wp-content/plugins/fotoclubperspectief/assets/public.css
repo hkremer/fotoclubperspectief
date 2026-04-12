@@ -18,12 +18,36 @@ table.fcp-ledenlijst td {
 	border: 1px solid #ccc;
 	padding: 0.4rem 0.5rem;
 	text-align: left;
-	vertical-align: top;
+	vertical-align: middle;
+}
+
+/* Alle celwaarden op één regel (horizontaal scrollen via wrapper). */
+table.fcp-ledenlijst td.fcp-ledenlijst-col--text,
+table.fcp-ledenlijst td.fcp-ledenlijst-col--bool {
+	white-space: nowrap;
 }
 
 table.fcp-ledenlijst thead th {
 	background: #f0f0f0;
 	font-weight: 600;
+}
+
+/* Boolean-kolomkoppen verticaal (compact). */
+table.fcp-ledenlijst thead th.fcp-ledenlijst-col--bool {
+	writing-mode: vertical-rl;
+	transform: rotate(180deg);
+	text-align: center;
+	vertical-align: middle;
+	font-size: 1.2rem;
+	font-weight: 600;
+	line-height: 1.15;
+	padding: 0.35rem 0.25rem;
+	max-width: 2.75rem;
+	white-space: nowrap;
+}
+
+table.fcp-ledenlijst tbody td.fcp-ledenlijst-col--bool {
+	text-align: center;
 }
 
 table.fcp-ledenlijst tbody tr:nth-child(even) {

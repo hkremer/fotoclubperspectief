@@ -117,6 +117,7 @@ $card_labels = array(
 					</section>
 
 					<section class="fcp-cell fcp-cards" aria-label="<?php esc_attr_e( 'Thema\'s', 'fotoclubperspectief' ); ?>">
+						<h2 id="fcp-cards-heading" class="fcp-block-title"><?php esc_html_e( 'WERKGROEPEN', 'fotoclubperspectief' ); ?></h2>
 						<div class="fcp-cards-inner">
 							<?php
 							foreach ( $card_labels as $key => $label ) {

@@ -55,26 +55,88 @@ class FCP_Member {
 		add_filter( 'manage_' . self::POST_TYPE . '_posts_columns', array( __CLASS__, 'posts_columns' ) );
 		add_action( 'manage_' . self::POST_TYPE . '_posts_custom_column', array( __CLASS__, 'posts_custom_column' ), 10, 2 );
 		add_filter( 'manage_edit-' . self::POST_TYPE . '_sortable_columns', array( __CLASS__, 'sortable_columns' ) );
-		add_action( 'pre_get_posts', array( __CLASS__, 'admin_sort_by_achternaam' ) );
+		add_action( 'pre_get_posts', array( __CLASS__, 'admin_sort_list' ) );
+		add_filter( 'default_hidden_columns', array( __CLASS__, 'default_hidden_list_columns' ), 10, 2 );
 	}
 
 	/**
-	 * Sort list table by achternaam when requested.
+	 * Standaard alle extra leden-kolommen en de datumkolom verborgen; titel blijft zichtbaar.
+	 * Geldt voor gebruikers die nog geen kolomvoorkeur hebben opgeslagen.
+	 *
+	 * @param string[]  $hidden Standaard verborgen kolommen.
+	 * @param WP_Screen $screen Huidig scherm.
+	 * @return string[]
+	 */
+	public static function default_hidden_list_columns( $hidden, $screen ) {
+		if ( ! $screen instanceof WP_Screen || 'edit-' . self::POST_TYPE !== $screen->id ) {
+			return $hidden;
+		}
+		$hide = array_merge( array_keys( self::admin_list_columns() ), array( 'date' ) );
+		return array_merge( (array) $hidden, $hide );
+	}
+
+	/**
+	 * Kolommen voor de ledenlijst (behalve titel).
+	 *
+	 * @return array<string,string> Kolom-ID => label.
+	 */
+	private static function admin_list_columns() {
+		return array(
+			'fcp_voornaam'              => __( 'Voornaam', 'fotoclubperspectief' ),
+			'fcp_achternaam'            => __( 'Achternaam', 'fotoclubperspectief' ),
+			'fcp_lidnr'                 => __( 'Lidnr fotobond', 'fotoclubperspectief' ),
+			'fcp_bar'                   => __( 'Bar', 'fotoclubperspectief' ),
+			'fcp_adres'                 => __( 'Adres', 'fotoclubperspectief' ),
+			'fcp_postcode'              => __( 'Postcode', 'fotoclubperspectief' ),
+			'fcp_plaats'                => __( 'Plaats', 'fotoclubperspectief' ),
+			'fcp_telefoon'              => __( 'Telefoon', 'fotoclubperspectief' ),
+			'fcp_email'                 => __( 'E-mail', 'fotoclubperspectief' ),
+			'fcp_bestuur'               => __( 'Bestuur', 'fotoclubperspectief' ),
+			'fcp_programma_cie'         => __( 'Programma cie', 'fotoclubperspectief' ),
+			'fcp_tentoonstelling_cie'   => __( 'Tentoonstelling cie', 'fotoclubperspectief' ),
+			'fcp_wedstrijden_cie'       => __( 'Wedstrijden cie', 'fotoclubperspectief' ),
+			'fcp_archief_foto_cie'      => __( 'Archief foto cie', 'fotoclubperspectief' ),
+			'fcp_website_cie'           => __( 'Website cie', 'fotoclubperspectief' ),
+			'fcp_redactie_cie'          => __( 'Redactie cie', 'fotoclubperspectief' ),
+			'fcp_natuur_werkgroep'      => __( 'Natuur werkgroep', 'fotoclubperspectief' ),
+			'fcp_portret_werkgroep'     => __( 'Portret werkgroep', 'fotoclubperspectief' ),
+			'fcp_straat_werkgroep'      => __( 'Straat werkgroep', 'fotoclubperspectief' ),
+			'fcp_architectuur_werkgroep' => __( 'Architectuur werkgroep', 'fotoclubperspectief' ),
+			'fcp_laptop_bediening'      => __( 'Laptop bediening', 'fotoclubperspectief' ),
+		);
+	}
+
+	/**
+	 * Admin ledenlijst: standaard op titel A–Z; bij klik op een sorteerbare kolom op meta sorteren.
 	 *
 	 * @param WP_Query $query Query.
 	 */
-	public static function admin_sort_by_achternaam( $query ) {
+	public static function admin_sort_list( $query ) {
 		if ( ! is_admin() || ! $query->is_main_query() ) {
 			return;
 		}
 		if ( self::POST_TYPE !== $query->get( 'post_type' ) ) {
 			return;
 		}
-		if ( 'fcp_achternaam' !== $query->get( 'orderby' ) ) {
+
+		$orderby = $query->get( 'orderby' );
+		if ( ! $orderby ) {
+			$query->set( 'orderby', 'title' );
+			$query->set( 'order', 'ASC' );
 			return;
 		}
-		$query->set( 'meta_key', '_fcp_achternaam' );
-		$query->set( 'orderby', 'meta_value' );
+
+		$map = array(
+			'fcp_voornaam'   => '_fcp_voornaam',
+			'fcp_achternaam' => '_fcp_achternaam',
+			'fcp_lidnr'      => '_fcp_lidnr_fotobond',
+			'fcp_plaats'     => '_fcp_plaats',
+			'fcp_email'      => '_fcp_email',
+		);
+		if ( isset( $map[ $orderby ] ) ) {
+			$query->set( 'meta_key', $map[ $orderby ] );
+			$query->set( 'orderby', 'meta_value' );
+		}
 	}
 
 	/**
@@ -286,7 +348,9 @@ class FCP_Member {
 		foreach ( $columns as $key => $label ) {
 			$new[ $key ] = $label;
 			if ( 'title' === $key ) {
-				$new['fcp_achternaam'] = __( 'Achternaam', 'fotoclubperspectief' );
+				foreach ( self::admin_list_columns() as $col_id => $col_label ) {
+					$new[ $col_id ] = $col_label;
+				}
 			}
 		}
 		return $new;
@@ -299,8 +363,45 @@ class FCP_Member {
 	 * @param int    $post_id Post ID.
 	 */
 	public static function posts_custom_column( $column, $post_id ) {
-		if ( 'fcp_achternaam' === $column ) {
-			echo esc_html( get_post_meta( $post_id, '_fcp_achternaam', true ) );
+		$string_map = array(
+			'fcp_voornaam'   => '_fcp_voornaam',
+			'fcp_achternaam' => '_fcp_achternaam',
+			'fcp_lidnr'      => '_fcp_lidnr_fotobond',
+			'fcp_adres'      => '_fcp_adres',
+			'fcp_postcode'   => '_fcp_postcode',
+			'fcp_plaats'     => '_fcp_plaats',
+			'fcp_telefoon'   => '_fcp_telefoon',
+			'fcp_email'      => '_fcp_email',
+		);
+		if ( isset( $string_map[ $column ] ) ) {
+			$v = get_post_meta( $post_id, $string_map[ $column ], true );
+			echo $v !== '' && null !== $v ? esc_html( (string) $v ) : '—';
+			return;
+		}
+
+		if ( 'fcp_bar' === $column ) {
+			$v = get_post_meta( $post_id, '_fcp_bar', true );
+			echo '1' === $v ? esc_html__( 'Ja', 'fotoclubperspectief' ) : '—';
+			return;
+		}
+
+		$bool_map = array(
+			'fcp_bestuur'               => '_fcp_bestuur',
+			'fcp_programma_cie'         => '_fcp_programma_cie',
+			'fcp_tentoonstelling_cie'   => '_fcp_tentoonstelling_cie',
+			'fcp_wedstrijden_cie'       => '_fcp_wedstrijden_cie',
+			'fcp_archief_foto_cie'      => '_fcp_archief_foto_cie',
+			'fcp_website_cie'           => '_fcp_website_cie',
+			'fcp_redactie_cie'          => '_fcp_redactie_cie',
+			'fcp_natuur_werkgroep'      => '_fcp_natuur_werkgroep',
+			'fcp_portret_werkgroep'     => '_fcp_portret_werkgroep',
+			'fcp_straat_werkgroep'      => '_fcp_straat_werkgroep',
+			'fcp_architectuur_werkgroep' => '_fcp_architectuur_werkgroep',
+			'fcp_laptop_bediening'      => '_fcp_laptop_bediening',
+		);
+		if ( isset( $bool_map[ $column ] ) ) {
+			$v = get_post_meta( $post_id, $bool_map[ $column ], true );
+			echo '1' === $v ? esc_html__( 'Ja', 'fotoclubperspectief' ) : '—';
 		}
 	}
 
@@ -311,7 +412,11 @@ class FCP_Member {
 	 * @return array
 	 */
 	public static function sortable_columns( $columns ) {
+		$columns['fcp_voornaam']   = 'fcp_voornaam';
 		$columns['fcp_achternaam'] = 'fcp_achternaam';
+		$columns['fcp_lidnr']      = 'fcp_lidnr';
+		$columns['fcp_plaats']     = 'fcp_plaats';
+		$columns['fcp_email']      = 'fcp_email';
 		return $columns;
 	}
 
@@ -331,18 +436,25 @@ class FCP_Member {
 	}
 
 	/**
-	 * Query all members sorted by achternaam, voornaam.
+	 * Alle leden ophalen, alfabetisch gesorteerd.
 	 *
+	 * @param string $sort_by 'achternaam' (standaard) of 'voornaam'.
 	 * @return WP_Post[]
 	 */
-	public static function get_members_sorted() {
+	public static function get_members_sorted( $sort_by = 'achternaam' ) {
+		$keys = array(
+			'achternaam' => '_fcp_achternaam',
+			'voornaam'   => '_fcp_voornaam',
+		);
+		$meta_key = isset( $keys[ $sort_by ] ) ? $keys[ $sort_by ] : '_fcp_achternaam';
+
 		$q = new WP_Query(
 			array(
 				'post_type'      => self::POST_TYPE,
 				'post_status'    => 'publish',
 				'posts_per_page' => -1,
 				'orderby'        => 'meta_value',
-				'meta_key'       => '_fcp_achternaam',
+				'meta_key'       => $meta_key,
 				'order'          => 'ASC',
 			)
 		);

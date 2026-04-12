@@ -48,7 +48,7 @@ class FCP_Shortcodes {
 	}
 
 	/**
-	 * Shortcode [fcp_ledenlijst show_contact="1"]
+	 * Shortcode [fcp_ledenlijst show_contact="1" sort="voornaam"]
 	 *
 	 * @param array $atts Attributes.
 	 * @return string
@@ -66,12 +66,14 @@ class FCP_Shortcodes {
 		$atts = shortcode_atts(
 			array(
 				'show_contact' => '1',
+				'sort'         => 'voornaam',
 			),
 			$atts,
 			'fcp_ledenlijst'
 		);
 
 		$show_contact = ( '0' === $atts['show_contact'] || 'false' === $atts['show_contact'] ) ? false : true;
+		$sort_by      = ( 'achternaam' === strtolower( (string) $atts['sort'] ) ) ? 'achternaam' : 'voornaam';
 
 		$columns = array(
 			'voornaam'              => __( 'Voornaam', 'fotoclubperspectief' ),
@@ -108,10 +110,12 @@ class FCP_Shortcodes {
 		 */
 		$columns = apply_filters( 'fcp_ledenlijst_columns', $columns );
 
-		$members = FCP_Member::get_members_sorted();
+		$members = FCP_Member::get_members_sorted( $sort_by );
 		if ( empty( $members ) ) {
 			return '<p class="fcp-ledenlijst-empty">' . esc_html__( 'Geen leden gevonden.', 'fotoclubperspectief' ) . '</p>';
 		}
+
+		$bool_keys = self::bool_column_keys();
 
 		ob_start();
 		?>
@@ -119,15 +123,21 @@ class FCP_Shortcodes {
 			<table class="fcp-ledenlijst">
 				<thead>
 					<tr>
-						<?php foreach ( $columns as $key => $label ) : ?>
-							<th scope="col"><?php echo esc_html( $label ); ?></th>
+						<?php
+						foreach ( $columns as $key => $label ) :
+							$th_class = 'fcp-ledenlijst-col fcp-ledenlijst-col--text';
+							if ( in_array( $key, $bool_keys, true ) ) {
+								$th_class = 'fcp-ledenlijst-col fcp-ledenlijst-col--bool';
+							}
+							?>
+							<th scope="col" class="<?php echo esc_attr( $th_class ); ?>"><?php echo esc_html( $label ); ?></th>
 						<?php endforeach; ?>
 					</tr>
 				</thead>
 				<tbody>
 					<?php
 					foreach ( $members as $m ) {
-						echo self::render_member_row( (int) $m->ID, $columns );
+						echo self::render_member_row( (int) $m->ID, $columns, $bool_keys );
 					}
 					?>
 				</tbody>
@@ -138,29 +148,12 @@ class FCP_Shortcodes {
 	}
 
 	/**
-	 * One table row.
+	 * Kolommen die als boolean (Ja/—) worden weergegeven.
 	 *
-	 * @param int   $post_id Post ID.
-	 * @param array $columns Columns.
+	 * @return string[]
 	 */
-	private static function render_member_row( $post_id, $columns ) {
-		$html = '<tr>';
-		foreach ( $columns as $key => $label ) {
-			$html .= '<td>' . self::cell_value( $post_id, $key ) . '</td>';
-		}
-		$html .= '</tr>';
-		return $html;
-	}
-
-	/**
-	 * Cell HTML for key.
-	 *
-	 * @param int    $post_id Post ID.
-	 * @param string $key     Column key.
-	 * @return string
-	 */
-	private static function cell_value( $post_id, $key ) {
-		$bool_keys = array(
+	private static function bool_column_keys() {
+		return array(
 			'bar',
 			'bestuur',
 			'programma_cie',
@@ -175,6 +168,51 @@ class FCP_Shortcodes {
 			'architectuur_werkgroep',
 			'laptop_bediening',
 		);
+	}
+
+	/**
+	 * One table row.
+	 *
+	 * @param int      $post_id  Post ID.
+	 * @param array    $columns  Columns.
+	 * @param string[] $bool_keys Bool column keys.
+	 */
+	private static function render_member_row( $post_id, $columns, $bool_keys ) {
+		$html = '<tr>';
+		foreach ( $columns as $key => $label ) {
+			$td_class = 'fcp-ledenlijst-col fcp-ledenlijst-col--text';
+			if ( in_array( $key, $bool_keys, true ) ) {
+				$td_class = 'fcp-ledenlijst-col fcp-ledenlijst-col--bool';
+			}
+			$html .= '<td class="' . esc_attr( $td_class ) . '">' . self::cell_value( $post_id, $key ) . '</td>';
+		}
+		$html .= '</tr>';
+		return $html;
+	}
+
+	/**
+	 * Alle witruimte (inclusief regeleinden) tot één spatie voor weergave op één regel.
+	 *
+	 * @param string $s Raw.
+	 * @return string
+	 */
+	private static function collapse_whitespace_one_line( $s ) {
+		$s = trim( (string) $s );
+		if ( '' === $s ) {
+			return '';
+		}
+		return (string) preg_replace( '/\s+/u', ' ', $s );
+	}
+
+	/**
+	 * Cell HTML for key.
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $key     Column key.
+	 * @return string
+	 */
+	private static function cell_value( $post_id, $key ) {
+		$bool_keys = self::bool_column_keys();
 
 		if ( in_array( $key, $bool_keys, true ) ) {
 			$v = get_post_meta( $post_id, '_fcp_' . $key, true );
@@ -195,10 +233,12 @@ class FCP_Shortcodes {
 		if ( isset( $meta_map[ $key ] ) ) {
 			$raw = get_post_meta( $post_id, $meta_map[ $key ], true );
 			if ( 'email' === $key ) {
-				$raw = sanitize_email( $raw );
-				return $raw ? '<a href="mailto:' . esc_attr( $raw ) . '">' . esc_html( $raw ) . '</a>' : '—';
+				$raw   = self::collapse_whitespace_one_line( (string) $raw );
+				$email = sanitize_email( $raw );
+				return $email ? '<a href="mailto:' . esc_attr( $email ) . '">' . esc_html( $email ) . '</a>' : '—';
 			}
-			return $raw !== '' && $raw !== null ? esc_html( (string) $raw ) : '—';
+			$raw = self::collapse_whitespace_one_line( (string) $raw );
+			return $raw !== '' ? esc_html( $raw ) : '—';
 		}
 
 		return '—';

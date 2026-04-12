@@ -20,6 +20,7 @@ define( 'FCP_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'FCP_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 require_once FCP_PLUGIN_DIR . 'includes/class-fcp-member.php';
+require_once FCP_PLUGIN_DIR . 'includes/class-fcp-member-import.php';
 require_once FCP_PLUGIN_DIR . 'includes/class-fcp-agenda.php';
 require_once FCP_PLUGIN_DIR . 'includes/class-fcp-home-settings.php';
 require_once FCP_PLUGIN_DIR . 'includes/class-fcp-shortcodes.php';
@@ -52,12 +53,72 @@ function fcp_bootstrap() {
 	load_plugin_textdomain( 'fotoclubperspectief', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
 
 	FCP_Member::init();
+	FCP_Member_Import::init_admin();
 	FCP_Agenda::init();
 	FCP_Home_Settings::init();
 	FCP_Shortcodes::init();
 }
 
 add_action( 'plugins_loaded', 'fcp_bootstrap' );
+
+if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( 'WP_CLI' ) ) {
+	/**
+	 * WP-CLI: wp fcp import-leden /pad/naar/leden.csv [--dry-run] [--no-update]
+	 */
+	WP_CLI::add_command(
+		'fcp import-leden',
+		function ( $args, $assoc_args ) {
+			if ( empty( $args[0] ) ) {
+				WP_CLI::error( 'Gebruik: wp fcp import-leden /pad/naar/bestand.csv' );
+			}
+			$path = realpath( $args[0] );
+			if ( ! $path || ! is_readable( $path ) ) {
+				WP_CLI::error( 'Bestand niet gevonden of niet leesbaar.' );
+			}
+			$import_args = array(
+				'update_existing' => ! isset( $assoc_args['no-update'] ),
+				'dry_run'         => isset( $assoc_args['dry-run'] ),
+			);
+			$result = FCP_Member_Import::import_file( $path, $import_args );
+			WP_CLI::success(
+				sprintf(
+					'Nieuw: %d, bijgewerkt: %d, overgeslagen: %d',
+					$result['created'],
+					$result['updated'],
+					$result['skipped']
+				)
+			);
+			if ( ! empty( $result['errors'] ) ) {
+				foreach ( $result['errors'] as $e ) {
+					WP_CLI::warning( $e );
+				}
+			}
+		},
+		array(
+			'shortdesc' => 'Importeer leden uit een CSV-bestand.',
+			'synopsis'  => array(
+				array(
+					'type'        => 'positional',
+					'name'        => 'file',
+					'description' => 'Pad naar het .csv-bestand',
+					'optional'    => false,
+				),
+				array(
+					'type'        => 'flag',
+					'name'        => 'dry-run',
+					'description' => 'Alleen tellen, geen wijzigingen',
+					'optional'    => true,
+				),
+				array(
+					'type'        => 'flag',
+					'name'        => 'no-update',
+					'description' => 'Geen bestaande leden bijwerken (alleen nieuwe aanmaken)',
+					'optional'    => true,
+				),
+			),
+		)
+	);
+}
 
 /**
  * Public assets.
