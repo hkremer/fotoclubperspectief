@@ -441,7 +441,7 @@ class FCP_Member {
 	 * @param string $sort_by 'achternaam' (standaard) of 'voornaam'.
 	 * @return WP_Post[]
 	 */
-	public static function get_members_sorted( $sort_by = 'achternaam' ) {
+	public static function get_members_sorted( $sort_by = 'voornaam' ) {
 		$keys = array(
 			'achternaam' => '_fcp_achternaam',
 			'voornaam'   => '_fcp_voornaam',

@@ -112,7 +112,12 @@ $card_labels = array(
 					</section>
 
 					<section class="fcp-cell fcp-agenda" aria-labelledby="fcp-agenda-heading">
-						<h2 id="fcp-agenda-heading" class="fcp-block-title"><?php esc_html_e( 'Agenda', 'fotoclubperspectief' ); ?></h2>
+						<div class="fcp-agenda-section__head">
+							<h2 id="fcp-agenda-heading" class="fcp-block-title"><?php esc_html_e( 'Agenda', 'fotoclubperspectief' ); ?></h2>
+							<a class="fcp-agenda-program-link" href="<?php echo esc_url( home_url( '/programma' ) ); ?>">
+								<?php echo esc_html__( '>>> Volledig programma', 'fotoclubperspectief' ); ?>
+							</a>
+						</div>
 						<?php get_template_part( 'parts/agenda', 'home' ); ?>
 					</section>
 

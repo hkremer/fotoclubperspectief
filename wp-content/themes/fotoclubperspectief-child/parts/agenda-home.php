@@ -27,9 +27,14 @@ $items = FCP_Agenda::get_upcoming( 4 );
 			$item_class  = $club ? 'fcp-agenda-item fcp-agenda--club' : 'fcp-agenda-item fcp-agenda--other';
 			?>
 			<article class="<?php echo esc_attr( $item_class ); ?>">
-				<time class="fcp-agenda-date" datetime="<?php echo esc_attr( $datum ); ?>">
-					<?php echo esc_html( FCP_Agenda::format_date_display( $datum ) ); ?>
-				</time>
+				<div class="fcp-agenda-item__head">
+					<time class="fcp-agenda-date" datetime="<?php echo esc_attr( $datum ); ?>">
+						<?php echo esc_html( FCP_Agenda::format_date_display( $datum ) ); ?>
+					</time>
+					<?php if ( $club ) : ?>
+						<span class="fcp-agenda-kind"><?php echo esc_html__( 'CLUBAVOND', 'fotoclubperspectief' ); ?></span>
+					<?php endif; ?>
+				</div>
 				<div class="fcp-agenda-desc">
 					<?php echo apply_filters( 'the_content', $beschrijving ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				</div>

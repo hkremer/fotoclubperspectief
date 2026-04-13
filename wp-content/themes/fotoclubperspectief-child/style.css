@@ -33,13 +33,13 @@
 .fcp-home-grid .fcp-mededelingen {
 	grid-column: 1;
 	grid-row: 1;
-	background-color: #008b8b;
+	background-color: #b1ead4; /* #008b8b*/
 }
 
 .fcp-home-grid .fcp-uitgelicht {
 	grid-column: 2 / span 2;
 	grid-row: 1;
-	background-color: #fcfbdE;
+	background-color: #008b8b; /* #fcfbdE*/
 }
 
 .fcp-home-grid .fcp-custom1 {
@@ -57,7 +57,7 @@
 .fcp-home-grid .fcp-agenda {
 	grid-column: 3;
 	grid-row: 2;
-	background-color: #008b8b;
+	background-color: #fcfbdE; /* #008b8b*/
 }
 
 .fcp-home-grid .fcp-cards {
@@ -133,8 +133,8 @@ body.front-page .singular article .post-inner .entry-content:empty {
 .fcp-uitgelicht figcaption {
 	margin-top: 0.5rem;
 	font-size: 0.95em;
+	color: #ffffff;
 	text-align: center;
-	color: #555;
 }
 
 .fcp-custom-image {
@@ -147,6 +147,36 @@ body.front-page .singular article .post-inner .entry-content:empty {
 }
 
 /* Agenda homepage */
+.fcp-agenda-section__head {
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 0.35rem 1rem;
+	box-sizing: border-box;
+	width: 100%;
+	margin: 0 0 0.5rem;
+	padding: 0;
+	border: 0;
+	background: transparent;
+}
+
+.fcp-agenda-section__head .fcp-block-title {
+	margin: 0;
+	padding: 0;
+	text-align: left;
+	flex-shrink: 0;
+}
+
+.fcp-agenda-program-link {
+	flex-shrink: 0;
+	margin-left: auto;
+	font-size: inherit;
+	font-weight: 400;
+	line-height: inherit;
+	text-decoration: underline;
+	text-underline-offset: 0.15em;
+}
+
 .fcp-agenda-home {
 	display: flex;
 	flex-direction: column;
@@ -159,6 +189,39 @@ body.front-page .singular article .post-inner .entry-content:empty {
 	gap: 0.35rem;
 }
 
+.fcp-agenda-item__head {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.25rem 0.75rem;
+}
+
+.fcp-agenda-item__head .fcp-agenda-date {
+	flex-shrink: 0;
+}
+
+.fcp-agenda--club .fcp-agenda-item__head {
+	background: #cd2653;
+	color: #fff;
+	border-radius: 4px;
+	padding: 0.25rem 0.5rem;
+}
+
+.fcp-agenda--other .fcp-agenda-item__head {
+	background: #c8d6e5;
+	color: #222;
+	border-radius: 4px;
+	padding: 0.25rem 0.5rem;
+}
+
+.fcp-agenda--club .fcp-agenda-kind {
+	margin-left: auto;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	color: inherit;
+	text-align: right;
+}
+
 .fcp-agenda-date {
 	display: inline-block;
 	padding: 0.25rem 0.5rem;
@@ -167,13 +230,17 @@ body.front-page .singular article .post-inner .entry-content:empty {
 }
 
 .fcp-agenda--club .fcp-agenda-date {
-	background: #1e3a5f;
+	background: transparent;
 	color: #fff;
+	padding: 0;
+	border-radius: 0;
 }
 
 .fcp-agenda--other .fcp-agenda-date {
-	background: #c8d6e5;
-	color: #222;
+	background: transparent;
+	color: inherit;
+	padding: 0;
+	border-radius: 0;
 }
 
 .fcp-agenda-desc {
@@ -182,7 +249,15 @@ body.front-page .singular article .post-inner .entry-content:empty {
 }
 
 .fcp-agenda-desc p {
-	margin: 0 0 0.5em;
+	margin: 0 0 0.35em;
+}
+
+.fcp-agenda-desc > :last-child {
+	margin-bottom: 0;
+}
+
+.fcp-agenda-desc p:empty {
+	display: none;
 }
 
 /* Vier cards */
