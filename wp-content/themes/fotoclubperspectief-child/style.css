@@ -178,15 +178,57 @@ body.front-page .singular article .post-inner .entry-content:empty {
 }
 
 .fcp-agenda-home {
-	display: flex;
-	flex-direction: column;
-	gap: 0.75rem;
+	display: block;
 }
 
-.fcp-agenda-item {
-	display: flex;
-	flex-direction: column;
-	gap: 0.35rem;
+.fcp-agenda-table-wrap {
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	margin: 0;
+}
+
+.fcp-agenda-table {
+	width: 100%;
+	min-width: 42rem;
+	border-collapse: collapse;
+	font-size: 0.95em;
+	line-height: 1.4;
+}
+
+.fcp-agenda-table th,
+.fcp-agenda-table td {
+	border: 1px solid rgba(0, 0, 0, 0.12);
+	padding: 0.5rem 0.65rem;
+	vertical-align: top;
+	text-align: left;
+}
+
+.fcp-agenda-table thead th {
+	background: #e8ecef;
+	font-weight: 700;
+}
+
+.fcp-agenda-table tbody tr:nth-child(even) {
+	background: rgba(0, 0, 0, 0.03);
+}
+
+.fcp-agenda-col--datum {
+	white-space: nowrap;
+	width: 1%;
+}
+
+.fcp-agenda-col--desc {
+	min-width: 12rem;
+}
+
+.fcp-agenda-col--avond,
+.fcp-agenda-col--bar,
+.fcp-agenda-col--laptop {
+	width: 1%;
+}
+
+.fcp-agenda-cell-empty {
+	color: #666;
 }
 
 .fcp-agenda-item__head {
@@ -194,27 +236,28 @@ body.front-page .singular article .post-inner .entry-content:empty {
 	align-items: center;
 	flex-wrap: wrap;
 	gap: 0.25rem 0.75rem;
+	min-width: 0;
 }
 
 .fcp-agenda-item__head .fcp-agenda-date {
 	flex-shrink: 0;
 }
 
-.fcp-agenda--club .fcp-agenda-item__head {
+.fcp-agenda-row--club .fcp-agenda-item__head {
 	background: #cd2653;
 	color: #fff;
 	border-radius: 4px;
 	padding: 0.25rem 0.5rem;
 }
 
-.fcp-agenda--other .fcp-agenda-item__head {
+.fcp-agenda-row--other .fcp-agenda-item__head {
 	background: #c8d6e5;
 	color: #222;
 	border-radius: 4px;
 	padding: 0.25rem 0.5rem;
 }
 
-.fcp-agenda--club .fcp-agenda-kind {
+.fcp-agenda-row--club .fcp-agenda-kind {
 	margin-left: auto;
 	font-weight: 700;
 	letter-spacing: 0.12em;
@@ -229,14 +272,14 @@ body.front-page .singular article .post-inner .entry-content:empty {
 	font-weight: 600;
 }
 
-.fcp-agenda--club .fcp-agenda-date {
+.fcp-agenda-row--club .fcp-agenda-date {
 	background: transparent;
 	color: #fff;
 	padding: 0;
 	border-radius: 0;
 }
 
-.fcp-agenda--other .fcp-agenda-date {
+.fcp-agenda-row--other .fcp-agenda-date {
 	background: transparent;
 	color: inherit;
 	padding: 0;

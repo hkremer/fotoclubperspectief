@@ -252,6 +252,158 @@ class FCP_Agenda {
 	}
 
 	/**
+	 * All published agenda items by event date (ascending).
+	 *
+	 * @return WP_Post[]
+	 */
+	public static function get_all_by_date() {
+		$q = new WP_Query(
+			array(
+				'post_type'      => self::POST_TYPE,
+				'post_status'    => 'publish',
+				'posts_per_page' => -1,
+				'meta_key'       => '_fcp_datum',
+				'orderby'        => 'meta_value',
+				'order'          => 'ASC',
+				'meta_type'      => 'DATE',
+			)
+		);
+
+		return $q->posts;
+	}
+
+	/**
+	 * HTML for a list of agenda posts (same structure as homepage block).
+	 *
+	 * @param WP_Post[] $items Posts.
+	 * @param string    $wrapper_classes Extra CSS classes on the outer div (space-separated).
+	 * @return string
+	 */
+	public static function render_agenda_items_html( $items, $wrapper_classes = '' ) {
+		$items = is_array( $items ) ? $items : array();
+		$class = 'fcp-agenda-home';
+		if ( is_string( $wrapper_classes ) && '' !== trim( $wrapper_classes ) ) {
+			$extra = preg_split( '/\s+/', trim( $wrapper_classes ), -1, PREG_SPLIT_NO_EMPTY );
+			if ( ! empty( $extra ) ) {
+				$class .= ' ' . implode( ' ', array_map( 'sanitize_html_class', $extra ) );
+			}
+		}
+
+		if ( empty( $items ) ) {
+			return '<div class="' . esc_attr( $class ) . '"><p class="fcp-agenda-empty">' . esc_html__( 'Geen geplande activiteiten.', 'fotoclubperspectief' ) . '</p></div>';
+		}
+
+		ob_start();
+		echo '<div class="' . esc_attr( $class ) . '">';
+		echo '<div class="fcp-agenda-table-wrap">';
+		echo '<table class="fcp-agenda-table">';
+		echo '<thead><tr>';
+		echo '<th scope="col" class="fcp-agenda-col fcp-agenda-col--datum">' . esc_html__( 'Datum', 'fotoclubperspectief' ) . '</th>';
+		echo '<th scope="col" class="fcp-agenda-col fcp-agenda-col--desc">' . esc_html__( 'Beschrijving', 'fotoclubperspectief' ) . '</th>';
+		echo '<th scope="col" class="fcp-agenda-col fcp-agenda-col--avond">' . esc_html__( 'Avondleiding', 'fotoclubperspectief' ) . '</th>';
+		echo '<th scope="col" class="fcp-agenda-col fcp-agenda-col--bar">' . esc_html__( 'Bardienst', 'fotoclubperspectief' ) . '</th>';
+		echo '<th scope="col" class="fcp-agenda-col fcp-agenda-col--laptop">' . esc_html__( 'Laptop bediening', 'fotoclubperspectief' ) . '</th>';
+		echo '</tr></thead><tbody>';
+
+		foreach ( $items as $post ) {
+			if ( ! ( $post instanceof WP_Post ) ) {
+				continue;
+			}
+			$post_id      = (int) $post->ID;
+			$datum        = get_post_meta( $post_id, '_fcp_datum', true );
+			$beschrijving = get_post_meta( $post_id, '_fcp_beschrijving', true );
+			$club         = get_post_meta( $post_id, '_fcp_clubavond', true ) === '1';
+			$row_class    = $club ? 'fcp-agenda-row fcp-agenda-row--club' : 'fcp-agenda-row fcp-agenda-row--other';
+			$avond        = class_exists( 'FCP_Member' ) ? self::member_label( $post_id, '_fcp_avondleiding_id' ) : '';
+			$bardienst    = self::bardienst_label( $post_id );
+			$laptop       = class_exists( 'FCP_Member' ) ? self::member_label( $post_id, '_fcp_laptop_id' ) : '';
+			?>
+			<tr class="<?php echo esc_attr( $row_class ); ?>">
+				<td class="fcp-agenda-col fcp-agenda-col--datum">
+					<div class="fcp-agenda-item__head">
+						<time class="fcp-agenda-date" datetime="<?php echo esc_attr( $datum ); ?>">
+							<?php echo esc_html( self::format_date_display( $datum ) ); ?>
+						</time>
+						<?php if ( $club ) : ?>
+							<span class="fcp-agenda-kind"><?php echo esc_html__( 'CLUBAVOND', 'fotoclubperspectief' ); ?></span>
+						<?php endif; ?>
+					</div>
+				</td>
+				<td class="fcp-agenda-col fcp-agenda-col--desc">
+					<div class="fcp-agenda-desc">
+						<?php echo apply_filters( 'the_content', $beschrijving ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+					</div>
+				</td>
+				<td class="fcp-agenda-col fcp-agenda-col--avond"><?php echo self::agenda_table_cell_name( $avond ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
+				<td class="fcp-agenda-col fcp-agenda-col--bar"><?php echo self::agenda_table_cell_name( $bardienst ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
+				<td class="fcp-agenda-col fcp-agenda-col--laptop"><?php echo self::agenda_table_cell_name( $laptop ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
+			</tr>
+			<?php
+		}
+
+		echo '</tbody></table></div></div>';
+
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Bardienst-namen (1 en/of 2) als één string.
+	 *
+	 * @param int $post_id Agenda post ID.
+	 * @return string
+	 */
+	private static function bardienst_label( $post_id ) {
+		$post_id = (int) $post_id;
+		if ( $post_id <= 0 || ! class_exists( 'FCP_Member' ) ) {
+			return '';
+		}
+		$bar1 = self::member_label( $post_id, '_fcp_bardienst_id_1' );
+		$bar2 = self::member_label( $post_id, '_fcp_bardienst_id_2' );
+		$bars = array_values( array_filter( array( $bar1, $bar2 ) ) );
+		if ( count( $bars ) === 2 ) {
+			return $bars[0] . __( ' en ', 'fotoclubperspectief' ) . $bars[1];
+		}
+		if ( count( $bars ) === 1 ) {
+			return $bars[0];
+		}
+		return '';
+	}
+
+	/**
+	 * Cel-inhoud: naam of streepje.
+	 *
+	 * @param string $name Voornaam.
+	 * @return string Escaped HTML.
+	 */
+	private static function agenda_table_cell_name( $name ) {
+		$name = is_string( $name ) ? trim( $name ) : '';
+		if ( '' === $name ) {
+			return '<span class="fcp-agenda-cell-empty">&mdash;</span>';
+		}
+		return esc_html( $name );
+	}
+
+	/**
+	 * Voornaam voor agenda-meta (member post-ID).
+	 *
+	 * @param int    $post_id  Agenda post ID.
+	 * @param string $meta_key Member-ID meta key.
+	 * @return string Empty when unset/ongeldig.
+	 */
+	private static function member_label( $post_id, $meta_key ) {
+		$raw = get_post_meta( (int) $post_id, $meta_key, true );
+		if ( '' === $raw || null === $raw ) {
+			return '';
+		}
+		$mid = absint( $raw );
+		if ( $mid <= 0 ) {
+			return '';
+		}
+		$name = FCP_Member::get_voornaam( $mid );
+		return is_string( $name ) ? trim( $name ) : '';
+	}
+
+	/**
 	 * Format date for display (localized).
 	 *
 	 * @param string $ymd Y-m-d.

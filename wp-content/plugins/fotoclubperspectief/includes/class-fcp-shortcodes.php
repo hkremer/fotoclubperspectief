@@ -17,6 +17,7 @@ class FCP_Shortcodes {
 	 */
 	public static function init() {
 		add_shortcode( 'fcp_ledenlijst', array( __CLASS__, 'ledenlijst' ) );
+		add_shortcode( 'fcp_agenda', array( __CLASS__, 'agenda' ) );
 		add_action( 'wp', array( __CLASS__, 'maybe_mark_ledenlijst_noindex' ) );
 	}
 
@@ -45,6 +46,25 @@ class FCP_Shortcodes {
 	 */
 	public static function print_noindex_meta() {
 		echo "<meta name=\"robots\" content=\"noindex, nofollow\" />\n";
+	}
+
+	/**
+	 * Shortcode [fcp_agenda]
+	 *
+	 * Volledige agenda (alle gepubliceerde items, op datum gesorteerd).
+	 *
+	 * @param array       $atts    Shortcode attributes (geen attributen; gereserveerd).
+	 * @param string|null $content Ingesloten shortcode-inhoud (ongebruikt).
+	 * @return string
+	 */
+	public static function agenda( $atts = array(), $content = null ) {
+		if ( ! class_exists( 'FCP_Agenda' ) ) {
+			return '<p class="fcp-agenda-missing">' . esc_html__( 'Activeer de plugin Fotoclub Perspectief.', 'fotoclubperspectief' ) . '</p>';
+		}
+
+		$items = FCP_Agenda::get_all_by_date();
+
+		return FCP_Agenda::render_agenda_items_html( $items, 'fcp-agenda--shortcode' );
 	}
 
 	/**
