@@ -64,7 +64,7 @@ class FCP_Shortcodes {
 
 		$items = FCP_Agenda::get_all_by_date();
 
-		return FCP_Agenda::render_agenda_items_html( $items, 'fcp-agenda--shortcode' );
+		return FCP_Agenda::render_agenda_items_html( $items, 'fcp-agenda--shortcode', 'table' );
 	}
 
 	/**

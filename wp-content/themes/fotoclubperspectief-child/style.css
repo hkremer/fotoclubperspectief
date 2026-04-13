@@ -118,6 +118,12 @@ body.front-page .singular article .post-inner .entry-content:empty {
 .fcp-mededeling-kop {
 	font-weight: 700;
 	font-size: 2.0rem;
+	margin-top: 0;
+	margin-bottom: 0.35rem;
+}
+
+.fcp-mededeling-tekst > :first-child {
+	margin-top: 0;
 }
 
 .fcp-uitgelicht figure {
@@ -139,11 +145,15 @@ body.front-page .singular article .post-inner .entry-content:empty {
 
 .fcp-custom-image {
 	margin-top: 0.75rem;
+	text-align: center;
 }
 
 .fcp-custom-image img {
+	display: block;
 	max-width: 100%;
 	height: auto;
+	margin-left: auto;
+	margin-right: auto;
 }
 
 /* Agenda homepage */
@@ -167,17 +177,71 @@ body.front-page .singular article .post-inner .entry-content:empty {
 	flex-shrink: 0;
 }
 
+.fcp-agenda-program-foot {
+	margin: 1rem 0 0;
+	padding: 0;
+	text-align: center;
+}
+
 .fcp-agenda-program-link {
-	flex-shrink: 0;
-	margin-left: auto;
+	display: inline-block;
 	font-size: inherit;
-	font-weight: 400;
+	font-weight: 600;
 	line-height: inherit;
 	text-decoration: underline;
 	text-underline-offset: 0.15em;
 }
 
-.fcp-agenda-home {
+/* Homepage: kaarten; shortcode [fcp_agenda]: tabel */
+.fcp-agenda-home--cards {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+.fcp-agenda-home--cards .fcp-agenda-item {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+}
+
+.fcp-agenda-home--cards .fcp-agenda--club .fcp-agenda-item__head {
+	background: #cd2653;
+	color: #fff;
+	border-radius: 4px;
+	padding: 0.25rem 0.5rem;
+}
+
+.fcp-agenda-home--cards .fcp-agenda--other .fcp-agenda-item__head {
+	background: #c8d6e5;
+	color: #222;
+	border-radius: 4px;
+	padding: 0.25rem 0.5rem;
+}
+
+.fcp-agenda-home--cards .fcp-agenda--club .fcp-agenda-kind {
+	margin-left: auto;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	color: inherit;
+	text-align: right;
+}
+
+.fcp-agenda-home--cards .fcp-agenda--club .fcp-agenda-date {
+	background: transparent;
+	color: #fff;
+	padding: 0;
+	border-radius: 0;
+}
+
+.fcp-agenda-home--cards .fcp-agenda--other .fcp-agenda-date {
+	background: transparent;
+	color: inherit;
+	padding: 0;
+	border-radius: 0;
+}
+
+.fcp-agenda-home--table {
 	display: block;
 }
 
@@ -208,8 +272,37 @@ body.front-page .singular article .post-inner .entry-content:empty {
 	font-weight: 700;
 }
 
-.fcp-agenda-table tbody tr:nth-child(even) {
-	background: rgba(0, 0, 0, 0.03);
+.fcp-agenda-table tbody tr.fcp-agenda-row--club > td {
+	background: #cd2653;
+	color: #fff;
+	border-color: rgba(255, 255, 255, 0.28);
+}
+
+.fcp-agenda-table tbody tr.fcp-agenda-row--other > td {
+	background: #c8d6e5;
+	color: #222;
+}
+
+.fcp-agenda-table tbody tr.fcp-agenda-row--club .fcp-agenda-item__head {
+	background: transparent;
+	padding: 0;
+}
+
+.fcp-agenda-table tbody tr.fcp-agenda-row--other .fcp-agenda-item__head {
+	background: transparent;
+	padding: 0;
+}
+
+.fcp-agenda-table tbody tr.fcp-agenda-row--club .fcp-agenda-cell-empty {
+	color: rgba(255, 255, 255, 0.75);
+}
+
+.fcp-agenda-table tbody tr.fcp-agenda-row--other .fcp-agenda-cell-empty {
+	color: rgba(0, 0, 0, 0.45);
+}
+
+.fcp-agenda-table tbody tr.fcp-agenda-row--club .fcp-agenda-desc a {
+	color: #fff;
 }
 
 .fcp-agenda-col--datum {
@@ -241,20 +334,6 @@ body.front-page .singular article .post-inner .entry-content:empty {
 
 .fcp-agenda-item__head .fcp-agenda-date {
 	flex-shrink: 0;
-}
-
-.fcp-agenda-row--club .fcp-agenda-item__head {
-	background: #cd2653;
-	color: #fff;
-	border-radius: 4px;
-	padding: 0.25rem 0.5rem;
-}
-
-.fcp-agenda-row--other .fcp-agenda-item__head {
-	background: #c8d6e5;
-	color: #222;
-	border-radius: 4px;
-	padding: 0.25rem 0.5rem;
 }
 
 .fcp-agenda-row--club .fcp-agenda-kind {

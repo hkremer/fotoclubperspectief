@@ -273,15 +273,17 @@ class FCP_Agenda {
 	}
 
 	/**
-	 * HTML for a list of agenda posts (same structure as homepage block).
+	 * HTML for a list of agenda posts.
 	 *
-	 * @param WP_Post[] $items Posts.
+	 * @param WP_Post[] $items           Posts.
 	 * @param string    $wrapper_classes Extra CSS classes on the outer div (space-separated).
+	 * @param string    $layout          'cards' (homepage-blok) of 'table' ([fcp_agenda]).
 	 * @return string
 	 */
-	public static function render_agenda_items_html( $items, $wrapper_classes = '' ) {
-		$items = is_array( $items ) ? $items : array();
-		$class = 'fcp-agenda-home';
+	public static function render_agenda_items_html( $items, $wrapper_classes = '', $layout = 'cards' ) {
+		$layout = ( 'table' === $layout ) ? 'table' : 'cards';
+		$items  = is_array( $items ) ? $items : array();
+		$class  = 'fcp-agenda-home fcp-agenda-home--' . $layout;
 		if ( is_string( $wrapper_classes ) && '' !== trim( $wrapper_classes ) ) {
 			$extra = preg_split( '/\s+/', trim( $wrapper_classes ), -1, PREG_SPLIT_NO_EMPTY );
 			if ( ! empty( $extra ) ) {
@@ -293,6 +295,50 @@ class FCP_Agenda {
 			return '<div class="' . esc_attr( $class ) . '"><p class="fcp-agenda-empty">' . esc_html__( 'Geen geplande activiteiten.', 'fotoclubperspectief' ) . '</p></div>';
 		}
 
+		if ( 'table' === $layout ) {
+			return self::render_agenda_table_html( $items, $class );
+		}
+
+		ob_start();
+		echo '<div class="' . esc_attr( $class ) . '">';
+		foreach ( $items as $post ) {
+			if ( ! ( $post instanceof WP_Post ) ) {
+				continue;
+			}
+			$post_id      = (int) $post->ID;
+			$datum        = get_post_meta( $post_id, '_fcp_datum', true );
+			$beschrijving = get_post_meta( $post_id, '_fcp_beschrijving', true );
+			$club         = get_post_meta( $post_id, '_fcp_clubavond', true ) === '1';
+			$item_class   = $club ? 'fcp-agenda-item fcp-agenda--club' : 'fcp-agenda-item fcp-agenda--other';
+			?>
+			<article class="<?php echo esc_attr( $item_class ); ?>">
+				<div class="fcp-agenda-item__head">
+					<time class="fcp-agenda-date" datetime="<?php echo esc_attr( $datum ); ?>">
+						<?php echo esc_html( self::format_date_display( $datum ) ); ?>
+					</time>
+					<?php if ( $club ) : ?>
+						<span class="fcp-agenda-kind"><?php echo esc_html__( 'CLUBAVOND', 'fotoclubperspectief' ); ?></span>
+					<?php endif; ?>
+				</div>
+				<div class="fcp-agenda-desc">
+					<?php echo apply_filters( 'the_content', $beschrijving ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				</div>
+			</article>
+			<?php
+		}
+		echo '</div>';
+
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Tabelweergave (shortcode).
+	 *
+	 * @param WP_Post[] $items Posts.
+	 * @param string    $class Outer div class attribute value (escaped when output).
+	 * @return string
+	 */
+	private static function render_agenda_table_html( $items, $class ) {
 		ob_start();
 		echo '<div class="' . esc_attr( $class ) . '">';
 		echo '<div class="fcp-agenda-table-wrap">';
