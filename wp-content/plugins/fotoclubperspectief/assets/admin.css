@@ -1,1 +1,226 @@
-/* Admin tweaks — Fotoclub homepage (afbeelding-velden) */
+/**
+ * Fotoclub homepage — scherm in wp-admin (body.fcp-home-admin).
+ * Kleuren in lijn met de site; contrast blijft geschikt voor het dashboard.
+ */
+
+body.fcp-home-admin {
+	--fcp-a11y-teal: #006b6b;
+	--fcp-accent: #008b8b;
+	--fcp-accent-soft: #e8f5f1;
+	--fcp-warm: #faf8f0;
+	--fcp-gold-tint: #fff9e6;
+	--fcp-border: #dcdcde;
+	--fcp-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+	--fcp-radius: 8px;
+}
+
+body.fcp-home-admin .fcp-home-wrap {
+	max-width: 920px;
+}
+
+body.fcp-home-admin .fcp-home-title {
+	margin: 0 0 0.35rem;
+	padding: 0 0 0.85rem;
+	font-size: 1.65rem;
+	font-weight: 600;
+	color: #1d2327;
+	border-bottom: 2px solid var(--fcp-accent);
+}
+
+body.fcp-home-admin .fcp-home-lead {
+	margin: 0.5rem 0 1.5rem;
+	font-size: 14px;
+	max-width: 52rem;
+}
+
+body.fcp-home-admin .fcp-home-panel {
+	box-sizing: border-box;
+	margin: 0 0 1.25rem;
+	padding: 1.1rem 1.25rem 0.25rem;
+	background: #fff;
+	border: 1px solid var(--fcp-border);
+	border-radius: var(--fcp-radius);
+	border-left: 4px solid var(--fcp-accent);
+	box-shadow: var(--fcp-shadow);
+}
+
+body.fcp-home-admin .fcp-home-panel--activation {
+	background: var(--fcp-accent-soft);
+	border-left-color: var(--fcp-a11y-teal);
+}
+
+body.fcp-home-admin .fcp-home-panel--activation-readonly {
+	opacity: 0.92;
+}
+
+body.fcp-home-admin .fcp-home-panel--activation-readonly input:disabled {
+	cursor: not-allowed;
+}
+
+body.fcp-home-admin .fcp-home-panel--cards {
+	background: linear-gradient(180deg, var(--fcp-gold-tint) 0%, #fff 12rem);
+	border-left-color: #c9a227;
+}
+
+body.fcp-home-admin .fcp-home-panel__title {
+	margin: 0 0 0.75rem;
+	padding: 0;
+	font-size: 1.15rem;
+	font-weight: 600;
+	color: var(--fcp-a11y-teal);
+}
+
+body.fcp-home-admin .fcp-home-panel .form-table {
+	margin-top: 0;
+}
+
+body.fcp-home-admin .fcp-home-panel .form-table th {
+	padding-left: 0;
+	width: 11rem;
+	font-weight: 500;
+}
+
+body.fcp-home-admin .fcp-home-panel .form-table td {
+	padding-right: 0;
+}
+
+body.fcp-home-admin .fcp-home-panel__intro {
+	margin: -0.25rem 0 1rem;
+	max-width: 40rem;
+}
+
+/* Werkgroepen: min. kolombreedte hoog genoeg voor URL-veld + preview (geen 3 smalle kolommen in ~920px) */
+body.fcp-home-admin .fcp-home-werkgrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+	gap: 1rem;
+	margin: 0 0 0.5rem;
+}
+
+body.fcp-home-admin .fcp-home-werkgroup {
+	box-sizing: border-box;
+	min-width: 0;
+	margin: 0;
+	padding: 0.85rem 1rem 0.25rem;
+	background: rgba(255, 255, 255, 0.92);
+	border: 1px solid var(--fcp-border);
+	border-radius: 6px;
+	box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+body.fcp-home-admin .fcp-home-werkgroup__title {
+	margin: 0 0 0.65rem;
+	padding: 0 0 0.35rem;
+	font-size: 0.95rem;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	color: #1d2327;
+	border-bottom: 1px solid var(--fcp-border);
+}
+
+/* In smalle kaarten: labels boven veld, volle breedte — voorkomt uitsteken naast smalle td */
+body.fcp-home-admin .fcp-home-werkgroup .form-table {
+	margin: 0;
+	width: 100%;
+}
+
+body.fcp-home-admin .fcp-home-werkgroup .form-table tbody,
+body.fcp-home-admin .fcp-home-werkgroup .form-table tr,
+body.fcp-home-admin .fcp-home-werkgroup .form-table th,
+body.fcp-home-admin .fcp-home-werkgroup .form-table td {
+	display: block;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+body.fcp-home-admin .fcp-home-werkgroup .form-table th {
+	width: auto;
+	min-width: 0;
+	padding: 0 0 0.2rem;
+}
+
+body.fcp-home-admin .fcp-home-werkgroup .form-table td {
+	padding: 0 0 0.85rem;
+}
+
+body.fcp-home-admin .fcp-home-werkgroup .form-table input.large-text {
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+/* Afbeelding-velden */
+body.fcp-home-admin .fcp-image-field .fcp-image-preview {
+	margin: 0.5rem 0;
+}
+
+body.fcp-home-admin .fcp-image-field .fcp-image-preview img {
+	display: block;
+	max-width: 240px;
+	height: auto;
+	border-radius: 4px;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+body.fcp-home-admin .fcp-home-werkgroup .fcp-image-field .fcp-image-preview img {
+	max-width: 100%;
+}
+
+body.fcp-home-admin .fcp-image-field .button {
+	margin: 0 0.5rem 0.35rem 0;
+}
+
+/* Editors binnen panel */
+body.fcp-home-admin .fcp-home-panel .wp-editor-wrap {
+	max-width: 100%;
+}
+
+body.fcp-home-admin .fcp-home-panel .mce-tinymce {
+	border-radius: 4px;
+}
+
+/* Mededelingen: eerste inhoudsblok, ruimere editor */
+body.fcp-home-admin .fcp-home-panel--mededelingen .form-table th {
+	vertical-align: top;
+	padding-top: 0.4rem;
+}
+
+body.fcp-home-admin .fcp-home-panel--mededelingen .wp-editor-wrap,
+body.fcp-home-admin .fcp-home-panel--mededelingen .mce-tinymce,
+body.fcp-home-admin .fcp-home-panel--mededelingen iframe.mce-edit-area {
+	max-width: 100%;
+}
+
+/* Opslaan (tussen blokken + onderaan) */
+body.fcp-home-admin .fcp-home-actions {
+	box-sizing: border-box;
+}
+
+body.fcp-home-admin .fcp-home-actions--between {
+	margin: 0 0 1.35rem;
+	padding: 0.85rem 0 0;
+	background: transparent;
+	border: none;
+	border-top: 1px solid var(--fcp-border);
+}
+
+body.fcp-home-admin .fcp-home-actions--footer {
+	margin: 1.5rem 0 2rem;
+	padding: 1rem 1.25rem;
+	background: #f6f7f7;
+	border: 1px solid var(--fcp-border);
+	border-radius: var(--fcp-radius);
+}
+
+body.fcp-home-admin .fcp-home-actions .button-primary {
+	min-width: 8rem;
+	padding: 0.35rem 1.25rem;
+	font-size: 14px;
+}
+
+@media screen and (max-width: 782px) {
+	body.fcp-home-admin .fcp-home-panel .form-table th {
+		width: auto;
+		padding-bottom: 0.25rem;
+	}
+}

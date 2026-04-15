@@ -15,6 +15,15 @@ class FCP_Home_Settings {
 	const OPTION_NAME = 'fcp_home_options';
 
 	/**
+	 * Capability voor homepage bewerken (los van Instellingen / manage_options).
+	 * Ken toe via Leden → Rollen (Members) aan bv. Redacteur.
+	 */
+	const CAP_MANAGE_HOMEPAGE = 'fcp_manage_homepage';
+
+	/** @var string Admin menu slug (toplevel Page). */
+	const MENU_SLUG = 'fcp-home';
+
+	/**
 	 * Default option structure.
 	 *
 	 * @return array
@@ -105,10 +114,50 @@ class FCP_Home_Settings {
 	 * Init.
 	 */
 	public static function init() {
+		add_action( 'admin_init', array( __CLASS__, 'ensure_administrator_has_cap' ), 0 );
 		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
+		add_filter( 'option_page_capability_fcp_home_group', array( __CLASS__, 'option_page_capability' ) );
 		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ) );
+		add_filter( 'admin_body_class', array( __CLASS__, 'admin_body_class' ) );
 		// Vroeg: wp_enqueue_editor() vóór andere plugins die de editor-actie al hebben getriggerd.
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_admin' ), 1 );
+	}
+
+	/**
+	 * Body class voor admin-CSS van deze pagina.
+	 *
+	 * @param string $classes Space-separated classes.
+	 * @return string
+	 */
+	public static function admin_body_class( $classes ) {
+		if ( ! function_exists( 'get_current_screen' ) ) {
+			return $classes;
+		}
+		$screen = get_current_screen();
+		if ( $screen && 'toplevel_page_' . self::MENU_SLUG === $screen->id ) {
+			$classes .= ' fcp-home-admin';
+		}
+		return $classes;
+	}
+
+	/**
+	 * Zorg dat beheerders de capability hebben (updates zonder her-activeren).
+	 */
+	public static function ensure_administrator_has_cap() {
+		$role = get_role( 'administrator' );
+		if ( $role && ! $role->has_cap( self::CAP_MANAGE_HOMEPAGE ) ) {
+			$role->add_cap( self::CAP_MANAGE_HOMEPAGE );
+		}
+	}
+
+	/**
+	 * Capability voor opslaan via options.php (Settings API).
+	 *
+	 * @param string $cap Standaard manage_options.
+	 * @return string
+	 */
+	public static function option_page_capability( $cap ) {
+		return self::CAP_MANAGE_HOMEPAGE;
 	}
 
 	/**
@@ -140,7 +189,11 @@ class FCP_Home_Settings {
 			return $prev;
 		}
 
-		$clean['enable_homepage'] = isset( $input['enable_homepage'] ) ? 1 : 0;
+		if ( current_user_can( 'manage_options' ) ) {
+			$clean['enable_homepage'] = isset( $input['enable_homepage'] ) ? 1 : 0;
+		} else {
+			$clean['enable_homepage'] = ! empty( $prev['enable_homepage'] ) ? 1 : 0;
+		}
 		$clean['featured_image_id'] = isset( $input['featured_image_id'] ) ? absint( $input['featured_image_id'] ) : 0;
 		$clean['featured_caption']  = isset( $input['featured_caption'] ) ? sanitize_text_field( wp_unslash( $input['featured_caption'] ) ) : '';
 
@@ -171,15 +224,17 @@ class FCP_Home_Settings {
 	}
 
 	/**
-	 * Admin menu.
+	 * Admin menu (eigen top-level item: geen toegang tot Instellingen nodig).
 	 */
 	public static function add_menu() {
-		add_options_page(
+		add_menu_page(
 			__( 'Fotoclub homepage', 'fotoclubperspectief' ),
 			__( 'Fotoclub homepage', 'fotoclubperspectief' ),
-			'manage_options',
-			'fcp-home',
-			array( __CLASS__, 'render_page' )
+			self::CAP_MANAGE_HOMEPAGE,
+			self::MENU_SLUG,
+			array( __CLASS__, 'render_page' ),
+			'dashicons-admin-home',
+			59
 		);
 	}
 
@@ -189,7 +244,7 @@ class FCP_Home_Settings {
 	 * @param string $hook Hook.
 	 */
 	public static function enqueue_admin( $hook ) {
-		if ( 'settings_page_fcp-home' !== $hook ) {
+		if ( 'toplevel_page_' . self::MENU_SLUG !== $hook ) {
 			return;
 		}
 		wp_enqueue_media();
@@ -204,7 +259,7 @@ class FCP_Home_Settings {
 		wp_enqueue_style(
 			'fcp-admin',
 			FCP_PLUGIN_URL . 'assets/admin.css',
-			array(),
+			array( 'wp-admin' ),
 			FCP_VERSION
 		);
 	}
@@ -252,16 +307,20 @@ class FCP_Home_Settings {
 	/**
 	 * wp_editor-instellingen: teeny + formatselect (alleen paragraaf en H3).
 	 *
-	 * @param string $textarea_name Name-attribuut van het veld.
-	 * @param int    $rows          Aantal rijen.
+	 * @param string   $textarea_name  Name-attribuut van het veld.
+	 * @param int      $rows           Aantal rijen (textarea / quicktags).
+	 * @param int|null $tinymce_height Optioneel: vaste hoogte TinyMCE in px.
 	 * @return array
 	 */
-	private static function homepage_wp_editor_settings( $textarea_name, $rows = 6 ) {
+	private static function homepage_wp_editor_settings( $textarea_name, $rows = 6, $tinymce_height = null ) {
 		$toolbar = 'formatselect,bold,italic,bullist,numlist,blockquote,link,unlink';
 		$tinymce = array(
 			'toolbar1'      => $toolbar,
 			'block_formats' => 'Paragraph=p;' . __( 'Kop 3', 'fotoclubperspectief' ) . '=h3',
 		);
+		if ( null !== $tinymce_height && (int) $tinymce_height > 0 ) {
+			$tinymce['height'] = (int) $tinymce_height;
+		}
 		return array(
 			'textarea_name' => $textarea_name,
 			'textarea_rows' => (int) $rows,
@@ -269,6 +328,31 @@ class FCP_Home_Settings {
 			'media_buttons' => false,
 			'tinymce'       => $tinymce,
 		);
+	}
+
+	/**
+	 * Knop alle velden opslaan (één form; elke knop dient om niet naar beneden te scrollen).
+	 *
+	 * @param string $id_suffix Unieke suffix voor het id-attribuut.
+	 * @param bool   $footer    True: afsluitende balk onderaan het formulier.
+	 */
+	private static function save_button_row( $id_suffix, $footer = false ) {
+		$classes = $footer ? 'fcp-home-actions fcp-home-actions--footer' : 'fcp-home-actions fcp-home-actions--between';
+		?>
+		<div class="<?php echo esc_attr( $classes ); ?>">
+			<?php
+			submit_button(
+				__( 'Wijzigingen opslaan', 'fotoclubperspectief' ),
+				'primary',
+				'submit',
+				false,
+				array(
+					'id' => 'fcp-hp-save-' . sanitize_key( $id_suffix ),
+				)
+			);
+			?>
+		</div>
+		<?php
 	}
 
 	/**
@@ -283,9 +367,9 @@ class FCP_Home_Settings {
 		?>
 		<div class="fcp-image-field" data-field="<?php echo esc_attr( $field_id ); ?>">
 			<input type="hidden" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[<?php echo esc_attr( $input_name ); ?>]" id="<?php echo esc_attr( $field_id ); ?>_id" value="<?php echo esc_attr( (string) $image_id ); ?>" />
-			<div class="fcp-image-preview" style="margin:8px 0;">
+			<div class="fcp-image-preview">
 				<?php if ( $url ) : ?>
-					<img src="<?php echo esc_url( $url ); ?>" alt="" style="max-width:240px;height:auto;" />
+					<img src="<?php echo esc_url( $url ); ?>" alt="" />
 				<?php endif; ?>
 			</div>
 			<button type="button" class="button fcp-select-image" data-target="<?php echo esc_attr( $field_id ); ?>"><?php esc_html_e( 'Afbeelding kiezen', 'fotoclubperspectief' ); ?></button>
@@ -298,148 +382,179 @@ class FCP_Home_Settings {
 	 * Render settings page.
 	 */
 	public static function render_page() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
+		if ( ! current_user_can( self::CAP_MANAGE_HOMEPAGE ) && ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Je hebt geen rechten om deze pagina te bekijken.', 'fotoclubperspectief' ) );
 		}
 
-		$o = self::get_options();
+		$o                           = self::get_options();
+		$can_manage_homepage_toggle = current_user_can( 'manage_options' );
 		?>
-		<div class="wrap">
-			<h1><?php esc_html_e( 'Fotoclub homepage', 'fotoclubperspectief' ); ?></h1>
-			<form method="post" action="options.php">
+		<div class="wrap fcp-home-wrap">
+			<h1 class="fcp-home-title"><?php esc_html_e( 'Fotoclub homepage', 'fotoclubperspectief' ); ?></h1>
+			<p class="fcp-home-lead description"><?php esc_html_e( 'Vul de blokken op de voorpagina in. Onder elk blok staat Wijzigingen opslaan: daarmee wordt het hele formulier tegelijk opgeslagen (niet alleen dat blok).', 'fotoclubperspectief' ); ?></p>
+			<form class="fcp-home-form" method="post" action="options.php">
 				<?php settings_fields( 'fcp_home_group' ); ?>
-				<h2><?php esc_html_e( 'Activatie', 'fotoclubperspectief' ); ?></h2>
-				<table class="form-table">
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Nieuwe homepage activeren', 'fotoclubperspectief' ); ?></th>
-						<td>
-							<label for="fcp_enable_homepage">
-								<input
-									type="checkbox"
-									id="fcp_enable_homepage"
-									name="<?php echo esc_attr( self::OPTION_NAME ); ?>[enable_homepage]"
-									value="1"
-									<?php checked( ! empty( $o['enable_homepage'] ) ); ?>
-								/>
-								<?php esc_html_e( 'Gebruik de nieuwe homepage-secties van de plugin op de voorpagina.', 'fotoclubperspectief' ); ?>
-							</label>
-							<p class="description"><?php esc_html_e( 'Standaard uit, zodat installeren van de plugin de huidige homepage niet direct wijzigt.', 'fotoclubperspectief' ); ?></p>
-						</td>
-					</tr>
-				</table>
-				<h2><?php esc_html_e( 'Uitgelicht', 'fotoclubperspectief' ); ?></h2>
-				<table class="form-table">
-					<tr>
-						<th><?php esc_html_e( 'Afbeelding', 'fotoclubperspectief' ); ?></th>
-						<td><?php self::image_field( 'fcp_feat', 'featured_image_id', (int) $o['featured_image_id'] ); ?></td>
-					</tr>
-					<tr>
-						<th><label for="fcp_feat_cap"><?php esc_html_e( 'Onderschrift', 'fotoclubperspectief' ); ?></label></th>
-						<td><input type="text" class="large-text" id="fcp_feat_cap" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[featured_caption]" value="<?php echo esc_attr( $o['featured_caption'] ); ?>" /></td>
-					</tr>
-				</table>
 
-				<h2><?php esc_html_e( 'Linker blok', 'fotoclubperspectief' ); ?></h2>
-				<table class="form-table">
-					<tr>
-						<th><label for="fcp_ct1t"><?php esc_html_e( 'Kop', 'fotoclubperspectief' ); ?></label></th>
-						<td><input type="text" class="large-text" id="fcp_ct1t" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[ct1_title]" value="<?php echo esc_attr( $o['ct1_title'] ); ?>" /></td>
-					</tr>
-					<tr>
-						<th><label for="fcp_ct1c"><?php esc_html_e( 'Tekst', 'fotoclubperspectief' ); ?></label></th>
-						<td><?php wp_editor( $o['ct1_content'], 'fcp_ct1_content', self::homepage_wp_editor_settings( self::OPTION_NAME . '[ct1_content]', 6 ) ); ?></td>
-					</tr>
-					<tr>
-						<th><?php esc_html_e( 'Optionele afbeelding', 'fotoclubperspectief' ); ?></th>
-						<td><?php self::image_field( 'fcp_ct1', 'ct1_image_id', (int) $o['ct1_image_id'] ); ?></td>
-					</tr>
-				</table>
-
-				<h2><?php esc_html_e( 'Midden blok', 'fotoclubperspectief' ); ?></h2>
-				<table class="form-table">
-					<tr>
-						<th><label for="fcp_ct2t"><?php esc_html_e( 'Kop', 'fotoclubperspectief' ); ?></label></th>
-						<td><input type="text" class="large-text" id="fcp_ct2t" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[ct2_title]" value="<?php echo esc_attr( $o['ct2_title'] ); ?>" /></td>
-					</tr>
-					<tr>
-						<th><label for="fcp_ct2c"><?php esc_html_e( 'Tekst', 'fotoclubperspectief' ); ?></label></th>
-						<td><?php wp_editor( $o['ct2_content'], 'fcp_ct2_content', self::homepage_wp_editor_settings( self::OPTION_NAME . '[ct2_content]', 6 ) ); ?></td>
-					</tr>
-					<tr>
-						<th><?php esc_html_e( 'Optionele afbeelding', 'fotoclubperspectief' ); ?></th>
-						<td><?php self::image_field( 'fcp_ct2', 'ct2_image_id', (int) $o['ct2_image_id'] ); ?></td>
-					</tr>
-				</table>
-
-				<h2><?php esc_html_e( 'Mededelingen', 'fotoclubperspectief' ); ?></h2>
-				<table class="form-table">
-					<tr>
-						<th><label for="fcp_mededelingen_content"><?php esc_html_e( 'Tekst', 'fotoclubperspectief' ); ?></label></th>
-						<td>
-							<p class="description"><?php esc_html_e( 'Zelfde editor als bij de linker- en middenblokken. In het eerste menu: alleen Paragraaf en Kop 3. Bij opslaan krijgt elke Kop 3 automatisch de class voor de opmaak op de site.', 'fotoclubperspectief' ); ?></p>
-							<?php
-							$med_c = isset( $o['mededelingen_content'] ) ? $o['mededelingen_content'] : '';
-							wp_editor(
-								$med_c,
-								'fcp_mededelingen_content',
-								self::homepage_wp_editor_settings( self::OPTION_NAME . '[mededelingen_content]', 8 )
-							);
-							?>
-						</td>
-					</tr>
-				</table>
-
-				<h2><?php esc_html_e( 'Homepage: vier cards (links en afbeeldingen)', 'fotoclubperspectief' ); ?></h2>
-				<p class="description"><?php esc_html_e( 'Per card een link en optioneel een afbeelding voor op de homepage.', 'fotoclubperspectief' ); ?></p>
-				<?php
-				$card_defs = array(
-					array(
-						'title'    => 'PORTRET',
-						'url_key'  => 'card_portret_url',
-						'img_key'  => 'card_portret_image_id',
-						'field_id' => 'fcp_card_portret',
-					),
-					array(
-						'title'    => 'NATUUR',
-						'url_key'  => 'card_natuur_url',
-						'img_key'  => 'card_natuur_image_id',
-						'field_id' => 'fcp_card_natuur',
-					),
-					array(
-						'title'    => 'STRAAT',
-						'url_key'  => 'card_straat_url',
-						'img_key'  => 'card_straat_image_id',
-						'field_id' => 'fcp_card_straat',
-					),
-					array(
-						'title'    => 'ARCHITECTUUR',
-						'url_key'  => 'card_architectuur_url',
-						'img_key'  => 'card_architectuur_image_id',
-						'field_id' => 'fcp_card_architectuur',
-					),
-				);
-				foreach ( $card_defs as $def ) {
-					$url_key = $def['url_key'];
-					$img_key = $def['img_key'];
-					$fid     = $def['field_id'];
-					$img_id  = isset( $o[ $img_key ] ) ? (int) $o[ $img_key ] : 0;
-					?>
-					<h3><?php echo esc_html( $def['title'] ); ?></h3>
+				<div class="fcp-home-panel fcp-home-panel--activation<?php echo $can_manage_homepage_toggle ? '' : ' fcp-home-panel--activation-readonly'; ?>">
+					<h2 class="fcp-home-panel__title"><?php esc_html_e( 'Activatie', 'fotoclubperspectief' ); ?></h2>
 					<table class="form-table">
 						<tr>
-							<th><label for="<?php echo esc_attr( $url_key ); ?>"><?php esc_html_e( 'URL', 'fotoclubperspectief' ); ?></label></th>
-							<td><input type="url" class="large-text" id="<?php echo esc_attr( $url_key ); ?>" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[<?php echo esc_attr( $url_key ); ?>]" value="<?php echo esc_attr( isset( $o[ $url_key ] ) ? $o[ $url_key ] : '' ); ?>" placeholder="https://"/></td>
-						</tr>
-						<tr>
-							<th><?php esc_html_e( 'Afbeelding', 'fotoclubperspectief' ); ?></th>
-							<td><?php self::image_field( $fid, $img_key, $img_id ); ?></td>
+							<th scope="row"><?php esc_html_e( 'Nieuwe homepage activeren', 'fotoclubperspectief' ); ?></th>
+							<td>
+								<label for="fcp_enable_homepage">
+									<input
+										type="checkbox"
+										id="fcp_enable_homepage"
+										name="<?php echo esc_attr( self::OPTION_NAME ); ?>[enable_homepage]"
+										value="1"
+										<?php checked( ! empty( $o['enable_homepage'] ) ); ?>
+										<?php disabled( ! $can_manage_homepage_toggle ); ?>
+									/>
+									<?php esc_html_e( 'Gebruik de nieuwe homepage-secties van de plugin op de voorpagina.', 'fotoclubperspectief' ); ?>
+								</label>
+								<?php if ( $can_manage_homepage_toggle ) : ?>
+									<p class="description"><?php esc_html_e( 'Standaard uit, zodat installeren van de plugin de huidige homepage niet direct wijzigt.', 'fotoclubperspectief' ); ?></p>
+								<?php else : ?>
+									<p class="description"><?php esc_html_e( 'Alleen een beheerder kan dit aan- of uitzetten. Jij kunt wel de inhoud hieronder bewerken.', 'fotoclubperspectief' ); ?></p>
+								<?php endif; ?>
+							</td>
 						</tr>
 					</table>
-					<?php
-				}
-				?>
+				</div>
+				<?php self::save_button_row( 'activation' ); ?>
 
-				<?php submit_button(); ?>
+				<div class="fcp-home-panel fcp-home-panel--mededelingen">
+					<h2 class="fcp-home-panel__title"><?php esc_html_e( 'Mededelingen', 'fotoclubperspectief' ); ?></h2>
+					<table class="form-table">
+						<tr>
+							<th><label for="fcp_mededelingen_content"><?php esc_html_e( 'Tekst', 'fotoclubperspectief' ); ?></label></th>
+							<td>
+								<p class="description"><?php esc_html_e( 'Plaats hier 1 of meerdere mededelingen. Gebruik voor iedere mededeling een Kop en een paragraaf.', 'fotoclubperspectief' ); ?></p>
+								<?php
+								$med_c = isset( $o['mededelingen_content'] ) ? $o['mededelingen_content'] : '';
+								wp_editor(
+									$med_c,
+									'fcp_mededelingen_content',
+									self::homepage_wp_editor_settings( self::OPTION_NAME . '[mededelingen_content]', 18, 420 )
+								);
+								?>
+							</td>
+						</tr>
+					</table>
+				</div>
+				<?php self::save_button_row( 'mededelingen' ); ?>
+
+				<div class="fcp-home-panel">
+					<h2 class="fcp-home-panel__title"><?php esc_html_e( 'Uitgelicht', 'fotoclubperspectief' ); ?></h2>
+					<table class="form-table">
+						<tr>
+							<th><?php esc_html_e( 'Afbeelding', 'fotoclubperspectief' ); ?></th>
+							<td><?php self::image_field( 'fcp_feat', 'featured_image_id', (int) $o['featured_image_id'] ); ?></td>
+						</tr>
+						<tr>
+							<th><label for="fcp_feat_cap"><?php esc_html_e( 'Onderschrift', 'fotoclubperspectief' ); ?></label></th>
+							<td><input type="text" class="large-text" id="fcp_feat_cap" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[featured_caption]" value="<?php echo esc_attr( $o['featured_caption'] ); ?>" /></td>
+						</tr>
+					</table>
+				</div>
+				<?php self::save_button_row( 'uitgelicht' ); ?>
+
+				<div class="fcp-home-panel">
+					<h2 class="fcp-home-panel__title"><?php esc_html_e( 'Linker blok', 'fotoclubperspectief' ); ?></h2>
+					<table class="form-table">
+						<tr>
+							<th><label for="fcp_ct1t"><?php esc_html_e( 'Kop', 'fotoclubperspectief' ); ?></label></th>
+							<td><input type="text" class="large-text" id="fcp_ct1t" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[ct1_title]" value="<?php echo esc_attr( $o['ct1_title'] ); ?>" /></td>
+						</tr>
+						<tr>
+							<th><label for="fcp_ct1c"><?php esc_html_e( 'Tekst', 'fotoclubperspectief' ); ?></label></th>
+							<td><?php wp_editor( $o['ct1_content'], 'fcp_ct1_content', self::homepage_wp_editor_settings( self::OPTION_NAME . '[ct1_content]', 6 ) ); ?></td>
+						</tr>
+						<tr>
+							<th><?php esc_html_e( 'Optionele afbeelding', 'fotoclubperspectief' ); ?></th>
+							<td><?php self::image_field( 'fcp_ct1', 'ct1_image_id', (int) $o['ct1_image_id'] ); ?></td>
+						</tr>
+					</table>
+				</div>
+				<?php self::save_button_row( 'linker-blok' ); ?>
+
+				<div class="fcp-home-panel">
+					<h2 class="fcp-home-panel__title"><?php esc_html_e( 'Midden blok', 'fotoclubperspectief' ); ?></h2>
+					<table class="form-table">
+						<tr>
+							<th><label for="fcp_ct2t"><?php esc_html_e( 'Kop', 'fotoclubperspectief' ); ?></label></th>
+							<td><input type="text" class="large-text" id="fcp_ct2t" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[ct2_title]" value="<?php echo esc_attr( $o['ct2_title'] ); ?>" /></td>
+						</tr>
+						<tr>
+							<th><label for="fcp_ct2c"><?php esc_html_e( 'Tekst', 'fotoclubperspectief' ); ?></label></th>
+							<td><?php wp_editor( $o['ct2_content'], 'fcp_ct2_content', self::homepage_wp_editor_settings( self::OPTION_NAME . '[ct2_content]', 6 ) ); ?></td>
+						</tr>
+						<tr>
+							<th><?php esc_html_e( 'Optionele afbeelding', 'fotoclubperspectief' ); ?></th>
+							<td><?php self::image_field( 'fcp_ct2', 'ct2_image_id', (int) $o['ct2_image_id'] ); ?></td>
+						</tr>
+					</table>
+				</div>
+				<?php self::save_button_row( 'midden-blok' ); ?>
+
+				<div class="fcp-home-panel fcp-home-panel--cards">
+					<h2 class="fcp-home-panel__title"><?php esc_html_e( 'Homepage: vier cards (links en afbeeldingen)', 'fotoclubperspectief' ); ?></h2>
+					<p class="description fcp-home-panel__intro"><?php esc_html_e( 'Per card een link en optioneel een afbeelding voor op de homepage.', 'fotoclubperspectief' ); ?></p>
+					<?php
+					$card_defs = array(
+						array(
+							'title'    => 'PORTRET',
+							'url_key'  => 'card_portret_url',
+							'img_key'  => 'card_portret_image_id',
+							'field_id' => 'fcp_card_portret',
+						),
+						array(
+							'title'    => 'NATUUR',
+							'url_key'  => 'card_natuur_url',
+							'img_key'  => 'card_natuur_image_id',
+							'field_id' => 'fcp_card_natuur',
+						),
+						array(
+							'title'    => 'STRAAT',
+							'url_key'  => 'card_straat_url',
+							'img_key'  => 'card_straat_image_id',
+							'field_id' => 'fcp_card_straat',
+						),
+						array(
+							'title'    => 'ARCHITECTUUR',
+							'url_key'  => 'card_architectuur_url',
+							'img_key'  => 'card_architectuur_image_id',
+							'field_id' => 'fcp_card_architectuur',
+						),
+					);
+					?>
+					<div class="fcp-home-werkgrid" role="group" aria-label="<?php esc_attr_e( 'Werkgroep-cards', 'fotoclubperspectief' ); ?>">
+						<?php
+						foreach ( $card_defs as $def ) {
+							$url_key = $def['url_key'];
+							$img_key = $def['img_key'];
+							$fid     = $def['field_id'];
+							$img_id  = isset( $o[ $img_key ] ) ? (int) $o[ $img_key ] : 0;
+							?>
+							<div class="fcp-home-werkgroup">
+								<h3 class="fcp-home-werkgroup__title"><?php echo esc_html( $def['title'] ); ?></h3>
+								<table class="form-table">
+									<tr>
+										<th><label for="<?php echo esc_attr( $url_key ); ?>"><?php esc_html_e( 'URL', 'fotoclubperspectief' ); ?></label></th>
+										<td><input type="url" class="large-text" id="<?php echo esc_attr( $url_key ); ?>" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[<?php echo esc_attr( $url_key ); ?>]" value="<?php echo esc_attr( isset( $o[ $url_key ] ) ? $o[ $url_key ] : '' ); ?>" placeholder="https://"/></td>
+									</tr>
+									<tr>
+										<th><?php esc_html_e( 'Afbeelding', 'fotoclubperspectief' ); ?></th>
+										<td><?php self::image_field( $fid, $img_key, $img_id ); ?></td>
+									</tr>
+								</table>
+							</div>
+							<?php
+						}
+						?>
+					</div>
+				</div>
+				<?php self::save_button_row( 'cards', true ); ?>
 			</form>
 		</div>
 		<?php

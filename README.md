@@ -64,8 +64,18 @@ In de backend moet de redacteur kunnen inrichten:
 1. Kopieer `wp-content/plugins/fotoclubperspectief` naar de `wp-content/plugins`-map van je WordPress-installatie en activeer **Fotoclub Perspectief** onder Plugins.
 2. Kopieer `wp-content/themes/fotoclubperspectief-child` naar `wp-content/themes` en activeer het child theme **Fotoclub Perspectief**. Het parent theme **Twenty Twenty** moet geïnstalleerd zijn.
 3. Ga naar **Instellingen → Lezen** en stel een statische pagina in als homepage; kies een pagina die je als startpagina wilt gebruiken (het child theme gebruikt `front-page.php` voor de layout).
-4. Homepage-inhoud: **Instellingen → Fotoclub homepage** (uitgelicht, custom teksten, mededelingen; per homepage-card een URL en optioneel een afbeelding).
+4. Homepage-inhoud: zie **Homepage beheren (dashboard)** hieronder (menu **Fotoclub homepage**, rechten voor redacteuren, verschil beheerder/redacteur bij activatie).
 5. Ledenlijst op een pagina: voeg de shortcode `[fcp_ledenlijst]` toe. Optioneel: `[fcp_ledenlijst show_contact="0"]` om telefoon en e-mail te verbergen.
+
+## Homepage beheren (dashboard)
+
+1. **Waar:** In het WordPress-dashboard het menupunt **Fotoclub homepage** (icoon: huis). Je hoeft **Instellingen** niet te kunnen openen; dit scherm staat los van het menu Instellingen.
+2. **Rechten (Members / rollen):**
+   - **Beheerders** hebben standaard toegang (o.a. `manage_options`) en kunnen alles op dit scherm doen, inclusief de homepage **in- of uitschakelen**.
+   - **Redacteuren** (of andere rollen) krijgen alleen toegang als je de capability **`fcp_manage_homepage`** toewijst, bijvoorbeeld via **Leden → Rollen** → rol *Redacteur* → vink het recht aan dat overeenkomt met `fcp_manage_homepage` (in de lijst vaak onder de technische naam).
+   - Zonder `fcp_manage_homepage` zie je dit scherm niet; zonder `manage_options` kun je wel inhoud bewerken maar **niet** het vinkje *Nieuwe homepage activeren* wijzigen (dat blijft alleen voor beheerders).
+3. **Activatie:** Het blok *Activatie* / *Nieuwe homepage activeren* bepaalt of de nieuwe grid-homepage van de plugin op de voorpagina wordt gebruikt. Alleen een **beheerder** (`manage_options`) kan dit aan- of uitzetten. Redacteuren zien de huidige stand wel (uitgeschakeld vinkje), maar kunnen alleen de overige velden aanpassen.
+4. **Inhoud op dit scherm** (volgorde): na *Activatie* eerst **mededelingen** (één tekstveld met ruime editor), daarna uitgelichte afbeelding en onderschrift; linker- en middenblok (kop, tekst, optioneel afbeelding); vier cards (PORTRET, NATUUR, STRAAT, ARCHITECTUUR) elk met URL en optioneel afbeelding. Sla onderaan op om wijzigingen op de site te zien (na activatie van de nieuwe homepage).
 
 ## Ledenlijst vullen (backend)
 

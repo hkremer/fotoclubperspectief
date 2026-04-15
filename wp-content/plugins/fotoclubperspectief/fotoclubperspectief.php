@@ -32,6 +32,9 @@ require_once FCP_PLUGIN_DIR . 'includes/template-tags.php';
 function fcp_activate() {
 	FCP_Member::register_post_type();
 	FCP_Agenda::register_post_type();
+	if ( class_exists( 'FCP_Home_Settings' ) ) {
+		FCP_Home_Settings::ensure_administrator_has_cap();
+	}
 	flush_rewrite_rules();
 }
 
