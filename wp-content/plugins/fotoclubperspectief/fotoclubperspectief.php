@@ -131,6 +131,14 @@ function fcp_enqueue_public_assets() {
 		FCP_VERSION
 	);
 	wp_enqueue_style( 'fcp-public' );
+
+	wp_register_script(
+		'fcp-ledenlijst',
+		FCP_PLUGIN_URL . 'assets/ledenlijst.js',
+		array(),
+		FCP_VERSION,
+		true
+	);
 }
 
 add_action( 'wp_enqueue_scripts', 'fcp_enqueue_public_assets' );

@@ -20,7 +20,7 @@ $defaults = array(
 	'ct2_title'         => '',
 	'ct2_content'       => '',
 	'ct2_image_id'      => 0,
-	'mededelingen'      => array(),
+	'mededelingen_content' => '',
 );
 $opt = array_merge( $defaults, is_array( $opt ) ? $opt : array() );
 
@@ -49,22 +49,9 @@ $card_labels = array(
 					<section class="fcp-cell fcp-mededelingen" aria-labelledby="fcp-mededelingen-heading">
 						<h2 id="fcp-mededelingen-heading" class="fcp-block-title"><?php esc_html_e( 'Mededelingen', 'fotoclubperspectief' ); ?></h2>
 						<?php
-						if ( ! empty( $opt['mededelingen'] ) && is_array( $opt['mededelingen'] ) ) {
-							foreach ( $opt['mededelingen'] as $block ) {
-								$t = isset( $block['title'] ) ? $block['title'] : '';
-								$c = isset( $block['content'] ) ? $block['content'] : '';
-								if ( '' === $t && '' === $c ) {
-									continue;
-								}
-								echo '<div class="fcp-mededeling-block">';
-								if ( $t ) {
-									echo '<h3 class="fcp-mededeling-kop">' . esc_html( $t ) . '</h3>';
-								}
-								if ( $c ) {
-									echo '<div class="fcp-mededeling-tekst">' . wp_kses_post( wpautop( $c ) ) . '</div>';
-								}
-								echo '</div>';
-							}
+						$med_inhoud = isset( $opt['mededelingen_content'] ) ? trim( (string) $opt['mededelingen_content'] ) : '';
+						if ( '' !== $med_inhoud ) {
+							echo '<div class="fcp-mededeling-body">' . apply_filters( 'the_content', $med_inhoud ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 						} else {
 							echo '<p>' . esc_html__( 'Nog geen mededelingen.', 'fotoclubperspectief' ) . '</p>';
 						}
@@ -117,8 +104,8 @@ $card_labels = array(
 						</div>
 						<?php get_template_part( 'parts/agenda', 'home' ); ?>
 						<p class="fcp-agenda-program-foot">
-							<a class="fcp-agenda-program-link" href="<?php echo esc_url( home_url( '/programma' ) ); ?>">
-								<?php echo esc_html__( '>>> Volledig programma', 'fotoclubperspectief' ); ?>
+							<a class="fcp-agenda-program-link wp-element-button" href="<?php echo esc_url( home_url( '/programma' ) ); ?>">
+								<?php esc_html_e( 'Volledig programma', 'fotoclubperspectief' ); ?>
 							</a>
 						</p>
 					</section>

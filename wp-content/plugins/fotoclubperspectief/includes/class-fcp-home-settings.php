@@ -30,6 +30,8 @@ class FCP_Home_Settings {
 			'ct2_title'         => '',
 			'ct2_content'       => '',
 			'ct2_image_id'      => 0,
+			'mededelingen_content' => '',
+			/** @deprecated Oude repeater-structuur; wordt bij migrate leeggemaakt. */
 			'mededelingen'      => array(),
 			'card_portret_url'          => '',
 			'card_portret_image_id'     => 0,
@@ -52,7 +54,51 @@ class FCP_Home_Settings {
 		if ( ! is_array( $o ) ) {
 			$o = array();
 		}
-		return array_merge( self::defaults(), $o );
+		$out = array_merge( self::defaults(), $o );
+		self::maybe_migrate_mededelingen_repeater( $out );
+		return $out;
+	}
+
+	/**
+	 * Eenmalig: oude mededelingen (meerdere blokken) → één HTML-veld.
+	 *
+	 * @param array $out Options (by ref updated when migration runs).
+	 */
+	private static function maybe_migrate_mededelingen_repeater( array &$out ) {
+		$has_new = isset( $out['mededelingen_content'] ) && is_string( $out['mededelingen_content'] ) && '' !== trim( $out['mededelingen_content'] );
+		if ( $has_new ) {
+			return;
+		}
+		if ( empty( $out['mededelingen'] ) || ! is_array( $out['mededelingen'] ) ) {
+			return;
+		}
+		$parts = array();
+		foreach ( $out['mededelingen'] as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$t = isset( $row['title'] ) ? trim( (string) $row['title'] ) : '';
+			$c = isset( $row['content'] ) ? trim( (string) $row['content'] ) : '';
+			if ( '' === $t && '' === $c ) {
+				continue;
+			}
+			$block = '';
+			if ( '' !== $t ) {
+				$block .= '<h3 class="fcp-mededeling-kop">' . esc_html( $t ) . '</h3>';
+			}
+			if ( '' !== $c ) {
+				$block .= wp_kses_post( $c );
+			}
+			if ( '' !== $block ) {
+				$parts[] = $block;
+			}
+		}
+		if ( empty( $parts ) ) {
+			return;
+		}
+		$out['mededelingen_content'] = implode( "\n\n", $parts );
+		$out['mededelingen']           = array();
+		update_option( self::OPTION_NAME, $out );
 	}
 
 	/**
@@ -61,7 +107,8 @@ class FCP_Home_Settings {
 	public static function init() {
 		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
 		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ) );
-		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_admin' ) );
+		// Vroeg: wp_enqueue_editor() vóór andere plugins die de editor-actie al hebben getriggerd.
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_admin' ), 1 );
 	}
 
 	/**
@@ -105,24 +152,10 @@ class FCP_Home_Settings {
 		$clean['ct2_content']  = isset( $input['ct2_content'] ) ? wp_kses_post( wp_unslash( $input['ct2_content'] ) ) : '';
 		$clean['ct2_image_id'] = isset( $input['ct2_image_id'] ) ? absint( $input['ct2_image_id'] ) : 0;
 
-		$meds = array();
-		if ( ! empty( $input['mededelingen'] ) && is_array( $input['mededelingen'] ) ) {
-			foreach ( $input['mededelingen'] as $row ) {
-				if ( ! is_array( $row ) ) {
-					continue;
-				}
-				$t = isset( $row['title'] ) ? sanitize_text_field( wp_unslash( $row['title'] ) ) : '';
-				$c = isset( $row['content'] ) ? wp_kses_post( wp_unslash( $row['content'] ) ) : '';
-				if ( '' === $t && '' === $c ) {
-					continue;
-				}
-				$meds[] = array(
-					'title'   => $t,
-					'content' => $c,
-				);
-			}
-		}
-		$clean['mededelingen'] = $meds;
+		$clean['mededelingen_content'] = isset( $input['mededelingen_content'] )
+			? self::mededeling_h3_ensure_class( wp_kses_post( wp_unslash( $input['mededelingen_content'] ) ) )
+			: '';
+		$clean['mededelingen']           = array();
 
 		$url_fields = array( 'card_portret_url', 'card_natuur_url', 'card_straat_url', 'card_architectuur_url' );
 		foreach ( $url_fields as $uf ) {
@@ -151,7 +184,7 @@ class FCP_Home_Settings {
 	}
 
 	/**
-	 * Enqueue media + small script for mededelingen rows.
+	 * Enqueue media + scripts voor afbeelding-velden.
 	 *
 	 * @param string $hook Hook.
 	 */
@@ -160,6 +193,7 @@ class FCP_Home_Settings {
 			return;
 		}
 		wp_enqueue_media();
+		wp_enqueue_editor();
 		wp_enqueue_script(
 			'fcp-home-admin',
 			FCP_PLUGIN_URL . 'assets/admin-home.js',
@@ -172,6 +206,68 @@ class FCP_Home_Settings {
 			FCP_PLUGIN_URL . 'assets/admin.css',
 			array(),
 			FCP_VERSION
+		);
+	}
+
+	/**
+	 * Zet class fcp-mededeling-kop op elke h3 in mededelingen-HTML (bij opslaan).
+	 *
+	 * @param string $html Sanitized HTML.
+	 * @return string
+	 */
+	private static function mededeling_h3_ensure_class( $html ) {
+		$html = (string) $html;
+		if ( '' === trim( $html ) ) {
+			return $html;
+		}
+		$out = preg_replace_callback(
+			'/<h3(\s[^>]*)?>/i',
+			function ( $m ) {
+				$attrs = isset( $m[1] ) ? $m[1] : '';
+				if ( preg_match( '/\sclass\s*=\s*([\'"])(.*?)\1/i', $attrs, $c ) ) {
+					$classes = $c[2];
+					if ( preg_match( '/(^|\s)fcp-mededeling-kop(\s|$)/', $classes ) ) {
+						return '<h3' . $attrs . '>';
+					}
+					$merged    = trim( $classes . ' fcp-mededeling-kop' );
+					$new_attrs = preg_replace(
+						'/\sclass\s*=\s*([\'"])(.*?)\1/i',
+						' class="' . esc_attr( $merged ) . '"',
+						$attrs,
+						1
+					);
+					return '<h3' . $new_attrs . '>';
+				}
+				$attrs = trim( (string) $attrs );
+				if ( '' === $attrs ) {
+					return '<h3 class="fcp-mededeling-kop">';
+				}
+				return '<h3 class="fcp-mededeling-kop" ' . $attrs . '>';
+			},
+			$html
+		);
+		return is_string( $out ) ? $out : $html;
+	}
+
+	/**
+	 * wp_editor-instellingen: teeny + formatselect (alleen paragraaf en H3).
+	 *
+	 * @param string $textarea_name Name-attribuut van het veld.
+	 * @param int    $rows          Aantal rijen.
+	 * @return array
+	 */
+	private static function homepage_wp_editor_settings( $textarea_name, $rows = 6 ) {
+		$toolbar = 'formatselect,bold,italic,bullist,numlist,blockquote,link,unlink';
+		$tinymce = array(
+			'toolbar1'      => $toolbar,
+			'block_formats' => 'Paragraph=p;' . __( 'Kop 3', 'fotoclubperspectief' ) . '=h3',
+		);
+		return array(
+			'textarea_name' => $textarea_name,
+			'textarea_rows' => (int) $rows,
+			'teeny'         => true,
+			'media_buttons' => false,
+			'tinymce'       => $tinymce,
 		);
 	}
 
@@ -251,7 +347,7 @@ class FCP_Home_Settings {
 					</tr>
 					<tr>
 						<th><label for="fcp_ct1c"><?php esc_html_e( 'Tekst', 'fotoclubperspectief' ); ?></label></th>
-						<td><?php wp_editor( $o['ct1_content'], 'fcp_ct1_content', array( 'textarea_name' => self::OPTION_NAME . '[ct1_content]', 'textarea_rows' => 6, 'teeny' => true, 'media_buttons' => false ) ); ?></td>
+						<td><?php wp_editor( $o['ct1_content'], 'fcp_ct1_content', self::homepage_wp_editor_settings( self::OPTION_NAME . '[ct1_content]', 6 ) ); ?></td>
 					</tr>
 					<tr>
 						<th><?php esc_html_e( 'Optionele afbeelding', 'fotoclubperspectief' ); ?></th>
@@ -267,7 +363,7 @@ class FCP_Home_Settings {
 					</tr>
 					<tr>
 						<th><label for="fcp_ct2c"><?php esc_html_e( 'Tekst', 'fotoclubperspectief' ); ?></label></th>
-						<td><?php wp_editor( $o['ct2_content'], 'fcp_ct2_content', array( 'textarea_name' => self::OPTION_NAME . '[ct2_content]', 'textarea_rows' => 6, 'teeny' => true, 'media_buttons' => false ) ); ?></td>
+						<td><?php wp_editor( $o['ct2_content'], 'fcp_ct2_content', self::homepage_wp_editor_settings( self::OPTION_NAME . '[ct2_content]', 6 ) ); ?></td>
 					</tr>
 					<tr>
 						<th><?php esc_html_e( 'Optionele afbeelding', 'fotoclubperspectief' ); ?></th>
@@ -276,28 +372,22 @@ class FCP_Home_Settings {
 				</table>
 
 				<h2><?php esc_html_e( 'Mededelingen', 'fotoclubperspectief' ); ?></h2>
-				<p class="description"><?php esc_html_e( 'Een of meer blokken met kop en tekst.', 'fotoclubperspectief' ); ?></p>
-				<div id="fcp-mededelingen">
-					<?php
-					$meds = ! empty( $o['mededelingen'] ) && is_array( $o['mededelingen'] ) ? $o['mededelingen'] : array( array( 'title' => '', 'content' => '' ) );
-					$i    = 0;
-					foreach ( $meds as $row ) {
-						$t = isset( $row['title'] ) ? $row['title'] : '';
-						$c = isset( $row['content'] ) ? $row['content'] : '';
-						?>
-						<div class="fcp-mededeling-row" style="border:1px solid #ccd0d4;padding:12px;margin-bottom:12px;background:#fff;">
-							<p><label><?php esc_html_e( 'Kop', 'fotoclubperspectief' ); ?><br />
-							<input type="text" class="large-text" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[mededelingen][<?php echo (int) $i; ?>][title]" value="<?php echo esc_attr( $t ); ?>" /></label></p>
-							<p><label><?php esc_html_e( 'Tekst', 'fotoclubperspectief' ); ?><br />
-							<textarea class="large-text" rows="5" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[mededelingen][<?php echo (int) $i; ?>][content]"><?php echo esc_textarea( $c ); ?></textarea></label></p>
-							<p><button type="button" class="button fcp-remove-med"><?php esc_html_e( 'Verwijder dit blok', 'fotoclubperspectief' ); ?></button></p>
-						</div>
-						<?php
-						++$i;
-					}
-					?>
-				</div>
-				<p><button type="button" class="button" id="fcp-add-med"><?php esc_html_e( '+ Mededeling toevoegen', 'fotoclubperspectief' ); ?></button></p>
+				<table class="form-table">
+					<tr>
+						<th><label for="fcp_mededelingen_content"><?php esc_html_e( 'Tekst', 'fotoclubperspectief' ); ?></label></th>
+						<td>
+							<p class="description"><?php esc_html_e( 'Zelfde editor als bij de linker- en middenblokken. In het eerste menu: alleen Paragraaf en Kop 3. Bij opslaan krijgt elke Kop 3 automatisch de class voor de opmaak op de site.', 'fotoclubperspectief' ); ?></p>
+							<?php
+							$med_c = isset( $o['mededelingen_content'] ) ? $o['mededelingen_content'] : '';
+							wp_editor(
+								$med_c,
+								'fcp_mededelingen_content',
+								self::homepage_wp_editor_settings( self::OPTION_NAME . '[mededelingen_content]', 8 )
+							);
+							?>
+						</td>
+					</tr>
+				</table>
 
 				<h2><?php esc_html_e( 'Homepage: vier cards (links en afbeeldingen)', 'fotoclubperspectief' ); ?></h2>
 				<p class="description"><?php esc_html_e( 'Per card een link en optioneel een afbeelding voor op de homepage.', 'fotoclubperspectief' ); ?></p>

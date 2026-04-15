@@ -137,9 +137,62 @@ class FCP_Shortcodes {
 
 		$bool_keys = self::bool_column_keys();
 
+		$bool_filter_columns = array();
+		foreach ( $columns as $key => $label ) {
+			if ( in_array( $key, $bool_keys, true ) ) {
+				$bool_filter_columns[ $key ] = $label;
+			}
+		}
+
+		wp_enqueue_script( 'fcp-ledenlijst' );
+
+		$role_filter_name = wp_unique_id( 'fcp_ll_role_' );
+
 		ob_start();
 		?>
-		<div class="fcp-ledenlijst-wrapper">
+		<div class="fcp-ledenlijst-wrapper" data-fcp-ledenlijst-root>
+			<div class="fcp-ledenlijst-toolbar">
+				<div class="fcp-ledenlijst-toolbar-section fcp-ledenlijst-toolbar-section--display">
+					<span class="fcp-ledenlijst-toolbar-heading"><?php esc_html_e( 'Weergave', 'fotoclubperspectief' ); ?></span>
+					<label class="fcp-ledenlijst-toggle">
+						<input type="checkbox" class="fcp-ledenlijst-toggle-address" />
+						<?php esc_html_e( 'Adres (straat, postcode, plaats)', 'fotoclubperspectief' ); ?>
+					</label>
+					<?php if ( $show_contact ) : ?>
+						<label class="fcp-ledenlijst-toggle">
+							<input type="checkbox" class="fcp-ledenlijst-toggle-phone" />
+							<?php esc_html_e( 'Telefoon', 'fotoclubperspectief' ); ?>
+						</label>
+						<label class="fcp-ledenlijst-toggle">
+							<input type="checkbox" class="fcp-ledenlijst-toggle-email" />
+							<?php esc_html_e( 'E-mail', 'fotoclubperspectief' ); ?>
+						</label>
+					<?php endif; ?>
+					<?php if ( isset( $columns['lidnr_fotobond'] ) ) : ?>
+						<label class="fcp-ledenlijst-toggle">
+							<input type="checkbox" class="fcp-ledenlijst-toggle-lidnr" />
+							<?php esc_html_e( 'Lidnr fotobond', 'fotoclubperspectief' ); ?>
+						</label>
+					<?php endif; ?>
+				</div>
+				<?php if ( ! empty( $bool_filter_columns ) ) : ?>
+					<div class="fcp-ledenlijst-toolbar-section fcp-ledenlijst-toolbar-section--filters">
+						<span class="fcp-ledenlijst-toolbar-heading"><?php esc_html_e( 'Filter op rol', 'fotoclubperspectief' ); ?></span>
+						<div class="fcp-ledenlijst-filter-chips fcp-ledenlijst-filter-chips--exclusive" role="radiogroup" aria-label="<?php echo esc_attr__( 'Filter op rol', 'fotoclubperspectief' ); ?>">
+							<label class="fcp-ledenlijst-filter-chip fcp-ledenlijst-filter-chip--neutral">
+								<input type="radio" name="<?php echo esc_attr( $role_filter_name ); ?>" class="fcp-ledenlijst-filter-role" value="" checked="checked" />
+								<span><?php esc_html_e( 'Alle leden', 'fotoclubperspectief' ); ?></span>
+							</label>
+							<?php foreach ( $bool_filter_columns as $fkey => $flabel ) : ?>
+								<label class="fcp-ledenlijst-filter-chip">
+									<input type="radio" name="<?php echo esc_attr( $role_filter_name ); ?>" class="fcp-ledenlijst-filter-role" value="<?php echo esc_attr( $fkey ); ?>" />
+									<span><?php echo esc_html( $flabel ); ?></span>
+								</label>
+							<?php endforeach; ?>
+						</div>
+					</div>
+				<?php endif; ?>
+			</div>
 			<table class="fcp-ledenlijst">
 				<thead>
 					<tr>
@@ -150,14 +203,15 @@ class FCP_Shortcodes {
 								$th_class = 'fcp-ledenlijst-col fcp-ledenlijst-col--bool';
 							}
 							?>
-							<th scope="col" class="<?php echo esc_attr( $th_class ); ?>"><?php echo esc_html( $label ); ?></th>
+							<th scope="col" class="<?php echo esc_attr( $th_class ); ?>" data-fcp-col="<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></th>
 						<?php endforeach; ?>
 					</tr>
 				</thead>
 				<tbody>
 					<?php
 					foreach ( $members as $m ) {
-						echo self::render_member_row( (int) $m->ID, $columns, $bool_keys );
+						$bool_map = self::member_bool_map( (int) $m->ID );
+						echo self::render_member_row( (int) $m->ID, $columns, $bool_keys, $bool_map );
 					}
 					?>
 				</tbody>
@@ -168,7 +222,7 @@ class FCP_Shortcodes {
 	}
 
 	/**
-	 * Kolommen die als boolean (Ja/—) worden weergegeven.
+	 * Kolommen die als boolean (vinkje/—) worden weergegeven.
 	 *
 	 * @return string[]
 	 */
@@ -191,20 +245,40 @@ class FCP_Shortcodes {
 	}
 
 	/**
+	 * Boolean flags per member (alle vaste boolean-kolommen).
+	 *
+	 * @param int $post_id Member post ID.
+	 * @return array<string, bool>
+	 */
+	private static function member_bool_map( $post_id ) {
+		$out = array();
+		foreach ( self::bool_column_keys() as $key ) {
+			$out[ $key ] = get_post_meta( $post_id, '_fcp_' . $key, true ) === '1';
+		}
+		return $out;
+	}
+
+	/**
 	 * One table row.
 	 *
-	 * @param int      $post_id  Post ID.
-	 * @param array    $columns  Columns.
-	 * @param string[] $bool_keys Bool column keys.
+	 * @param int              $post_id   Post ID.
+	 * @param array            $columns   Columns.
+	 * @param string[]         $bool_keys Bool column keys.
+	 * @param array<string,bool> $bool_map  Flags for data-fcp-bool-* (row filter).
 	 */
-	private static function render_member_row( $post_id, $columns, $bool_keys ) {
-		$html = '<tr>';
+	private static function render_member_row( $post_id, $columns, $bool_keys, $bool_map ) {
+		$html = '<tr';
+		foreach ( self::bool_column_keys() as $bk ) {
+			$on = ! empty( $bool_map[ $bk ] );
+			$html .= ' data-fcp-bool-' . esc_attr( $bk ) . '="' . ( $on ? '1' : '0' ) . '"';
+		}
+		$html .= '>';
 		foreach ( $columns as $key => $label ) {
 			$td_class = 'fcp-ledenlijst-col fcp-ledenlijst-col--text';
 			if ( in_array( $key, $bool_keys, true ) ) {
 				$td_class = 'fcp-ledenlijst-col fcp-ledenlijst-col--bool';
 			}
-			$html .= '<td class="' . esc_attr( $td_class ) . '">' . self::cell_value( $post_id, $key ) . '</td>';
+			$html .= '<td class="' . esc_attr( $td_class ) . '" data-fcp-col="' . esc_attr( $key ) . '">' . self::cell_value( $post_id, $key ) . '</td>';
 		}
 		$html .= '</tr>';
 		return $html;
@@ -236,7 +310,10 @@ class FCP_Shortcodes {
 
 		if ( in_array( $key, $bool_keys, true ) ) {
 			$v = get_post_meta( $post_id, '_fcp_' . $key, true );
-			return $v === '1' ? esc_html__( 'Ja', 'fotoclubperspectief' ) : '—';
+			if ( $v === '1' ) {
+				return '<span class="fcp-ledenlijst-bool-check" role="img" aria-label="' . esc_attr__( 'Ja', 'fotoclubperspectief' ) . '">' . esc_html( "\u{2713}" ) . '</span>';
+			}
+			return '—';
 		}
 
 		$meta_map = array(

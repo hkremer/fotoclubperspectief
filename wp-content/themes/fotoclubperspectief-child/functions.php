@@ -22,7 +22,7 @@ function fotoclubperspectief_child_enqueue_styles() {
 		'fotoclubperspectief-child',
 		get_stylesheet_uri(),
 		array( 'twentytwenty-parent-style' ),
-		wp_get_theme()->get( 'Version' )
+		(string) filemtime( get_stylesheet_directory() . '/style.css' )
 	);
 }
 

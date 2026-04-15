@@ -7,10 +7,101 @@
 	margin-bottom: 1.5rem;
 }
 
+/* Toolbar: weergave + filters */
+.fcp-ledenlijst-toolbar {
+	margin-bottom: 1rem;
+	padding: 0.75rem 1rem;
+	background: #f7f7f7;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	font-size: 1.0625rem;
+}
+
+.fcp-ledenlijst-toolbar-section {
+	margin-bottom: 0.85rem;
+}
+
+.fcp-ledenlijst-toolbar-section:last-of-type {
+	margin-bottom: 0.35rem;
+}
+
+.fcp-ledenlijst-toolbar-heading {
+	display: block;
+	font-weight: 600;
+	font-size: 1.1em;
+	margin-bottom: 0.35rem;
+}
+
+.fcp-ledenlijst-toolbar-section--display .fcp-ledenlijst-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	margin-right: 1.25rem;
+	cursor: pointer;
+}
+
+.fcp-ledenlijst-toolbar-hint {
+	margin: 0 0 0.5rem;
+	font-size: 0.95em;
+	color: #444;
+}
+
+.fcp-ledenlijst-filter-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem 0.75rem;
+	margin-bottom: 0.65rem;
+}
+
+.fcp-ledenlijst-filter-chip {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	cursor: pointer;
+	font-size: 1em;
+}
+
+.fcp-ledenlijst-filter-chip input.fcp-ledenlijst-filter-role {
+	position: absolute;
+	opacity: 0;
+	width: 0;
+	height: 0;
+	margin: 0;
+}
+
+.fcp-ledenlijst-filter-chip span {
+	display: inline-block;
+	padding: 0.35rem 0.75rem;
+	border: 1px solid #bbb;
+	border-radius: 999px;
+	background: #fff;
+	line-height: 1.2;
+	transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.fcp-ledenlijst-filter-chip:hover span {
+	border-color: #999;
+}
+
+/* Aan (één rol tegelijk) */
+.fcp-ledenlijst-filter-chip input.fcp-ledenlijst-filter-role:checked + span {
+	background: #2271b1;
+	color: #fff;
+	border-color: #135e96;
+	font-weight: 600;
+}
+
+.fcp-ledenlijst-filter-chip--neutral input.fcp-ledenlijst-filter-role:checked + span {
+	background: #e8e8e8;
+	color: #1e1e1e;
+	border-color: #b0b0b0;
+	font-weight: 600;
+}
+
 table.fcp-ledenlijst {
 	width: 100%;
 	border-collapse: collapse;
-	font-size: 0.95em;
+	font-size: 0.875em;
 }
 
 table.fcp-ledenlijst th,
@@ -38,7 +129,7 @@ table.fcp-ledenlijst thead th.fcp-ledenlijst-col--bool {
 	transform: rotate(180deg);
 	text-align: center;
 	vertical-align: middle;
-	font-size: 1.2rem;
+	font-size: 1.08em;
 	font-weight: 600;
 	line-height: 1.15;
 	padding: 0.35rem 0.25rem;
@@ -50,8 +141,20 @@ table.fcp-ledenlijst tbody td.fcp-ledenlijst-col--bool {
 	text-align: center;
 }
 
-table.fcp-ledenlijst tbody tr:nth-child(even) {
-	background: #fafafa;
+.fcp-ledenlijst-bool-check {
+	color: #1e7b2e;
+	font-weight: 700;
+	font-size: 1.15em;
+	line-height: 1;
+}
+
+/* Om-en-om alleen over zichtbare rijen (na filter via JS: .fcp-ledenlijst-tr--alt). */
+table.fcp-ledenlijst tbody tr {
+	background: #fff;
+}
+
+table.fcp-ledenlijst tbody tr.fcp-ledenlijst-tr--alt {
+	background: #cff8b1;
 }
 
 .fcp-ledenlijst-empty {
