@@ -316,7 +316,7 @@ class FCP_Home_Settings {
 		$toolbar = 'formatselect,bold,italic,bullist,numlist,blockquote,link,unlink';
 		$tinymce = array(
 			'toolbar1'      => $toolbar,
-			'block_formats' => 'Paragraph=p;' . __( 'Kop 3', 'fotoclubperspectief' ) . '=h3',
+			'block_formats' => 'Paragraph=p;' . __( 'Kop', 'fotoclubperspectief' ) . '=h3',
 		);
 		if ( null !== $tinymce_height && (int) $tinymce_height > 0 ) {
 			$tinymce['height'] = (int) $tinymce_height;
