@@ -21,6 +21,95 @@ class FCP_Agenda {
 		add_action( 'init', array( __CLASS__, 'register_post_type' ) );
 		add_action( 'add_meta_boxes', array( __CLASS__, 'add_meta_boxes' ) );
 		add_action( 'save_post_' . self::POST_TYPE, array( __CLASS__, 'save_post' ), 10, 2 );
+		add_action( 'pre_get_posts', array( __CLASS__, 'admin_posts_orderby' ) );
+		add_filter( 'manage_' . self::POST_TYPE . '_posts_columns', array( __CLASS__, 'admin_posts_columns' ) );
+		add_action( 'manage_' . self::POST_TYPE . '_posts_custom_column', array( __CLASS__, 'admin_posts_custom_column' ), 10, 2 );
+		add_filter( 'manage_edit-' . self::POST_TYPE . '_sortable_columns', array( __CLASS__, 'admin_sortable_columns' ) );
+	}
+
+	/**
+	 * Standaard sortering in het admin-overzicht: activiteitsdatum oplopend.
+	 *
+	 * @param WP_Query $query Query.
+	 */
+	public static function admin_posts_orderby( $query ) {
+		if ( ! is_admin() || ! $query->is_main_query() ) {
+			return;
+		}
+		$pt = $query->get( 'post_type' );
+		if ( self::POST_TYPE !== $pt ) {
+			return;
+		}
+		$orderby = $query->get( 'orderby' );
+		if ( 'fcp_datum' === $orderby ) {
+			$query->set( 'meta_key', '_fcp_datum' );
+			$query->set( 'orderby', 'meta_value' );
+			$query->set( 'meta_type', 'DATE' );
+			return;
+		}
+		if ( empty( $orderby ) ) {
+			$query->set( 'meta_key', '_fcp_datum' );
+			$query->set( 'orderby', 'meta_value' );
+			$query->set( 'order', 'ASC' );
+			$query->set( 'meta_type', 'DATE' );
+		}
+	}
+
+	/**
+	 * Kolommen: activiteitsdatum, clubavond; WordPress-publicatiedatumkolom weg (verwarrend).
+	 *
+	 * @param string[] $columns Columns.
+	 * @return string[]
+	 */
+	public static function admin_posts_columns( $columns ) {
+		if ( ! is_array( $columns ) ) {
+			return $columns;
+		}
+		unset( $columns['date'] );
+		$out = array();
+		foreach ( $columns as $key => $label ) {
+			$out[ $key ] = $label;
+			if ( 'title' === $key ) {
+				$out['fcp_datum']     = __( 'Datum', 'fotoclubperspectief' );
+				$out['fcp_clubavond'] = __( 'Clubavond', 'fotoclubperspectief' );
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * @param string $column Column key.
+	 * @param int    $post_id Post ID.
+	 */
+	public static function admin_posts_custom_column( $column, $post_id ) {
+		$post_id = (int) $post_id;
+		if ( 'fcp_datum' === $column ) {
+			$d = get_post_meta( $post_id, '_fcp_datum', true );
+			echo esc_html( self::format_date_display( is_string( $d ) ? $d : '' ) );
+			return;
+		}
+		if ( 'fcp_clubavond' === $column ) {
+			$club = get_post_meta( $post_id, '_fcp_clubavond', true ) === '1';
+			if ( $club ) {
+				echo '<span class="fcp-agenda-admin-club-yes">' . esc_html__( 'Ja', 'fotoclubperspectief' ) . '</span>';
+			} else {
+				echo '<span class="fcp-agenda-admin-club-no">&mdash;</span>';
+			}
+		}
+	}
+
+	/**
+	 * Sorteerbare kolom (datum activiteit).
+	 *
+	 * @param string[] $columns Sortable columns.
+	 * @return string[]
+	 */
+	public static function admin_sortable_columns( $columns ) {
+		if ( ! is_array( $columns ) ) {
+			return $columns;
+		}
+		$columns['fcp_datum'] = 'fcp_datum';
+		return $columns;
 	}
 
 	/**
