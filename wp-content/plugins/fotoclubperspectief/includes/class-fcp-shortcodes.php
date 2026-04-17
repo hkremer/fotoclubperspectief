@@ -96,28 +96,20 @@ class FCP_Shortcodes {
 		$sort_by      = ( 'achternaam' === strtolower( (string) $atts['sort'] ) ) ? 'achternaam' : 'voornaam';
 
 		$columns = array(
-			'voornaam'              => __( 'Voornaam', 'fotoclubperspectief' ),
-			'achternaam'            => __( 'Achternaam', 'fotoclubperspectief' ),
-			'lidnr_fotobond'        => __( 'Lidnr fotobond', 'fotoclubperspectief' ),
-			'bar'                   => __( 'Bar', 'fotoclubperspectief' ),
-			'adres'                 => __( 'Adres', 'fotoclubperspectief' ),
-			'postcode'              => __( 'Postcode', 'fotoclubperspectief' ),
-			'plaats'                => __( 'Plaats', 'fotoclubperspectief' ),
-			'telefoon'              => __( 'Telefoon', 'fotoclubperspectief' ),
-			'email'                 => __( 'E-mail', 'fotoclubperspectief' ),
-			'bestuur'               => __( 'Bestuur', 'fotoclubperspectief' ),
-			'programma_cie'         => __( 'Programma cie', 'fotoclubperspectief' ),
-			'tentoonstelling_cie'   => __( 'Tentoonstelling cie', 'fotoclubperspectief' ),
-			'wedstrijden_cie'       => __( 'Wedstrijden cie', 'fotoclubperspectief' ),
-			'archief_foto_cie'      => __( 'Archief foto cie', 'fotoclubperspectief' ),
-			'website_cie'           => __( 'Website cie', 'fotoclubperspectief' ),
-			'redactie_cie'          => __( 'Redactie cie', 'fotoclubperspectief' ),
-			'natuur_werkgroep'      => __( 'Natuur werkgroep', 'fotoclubperspectief' ),
-			'portret_werkgroep'     => __( 'Portret werkgroep', 'fotoclubperspectief' ),
-			'straat_werkgroep'      => __( 'Straat werkgroep', 'fotoclubperspectief' ),
-			'architectuur_werkgroep' => __( 'Architectuur werkgroep', 'fotoclubperspectief' ),
-			'laptop_bediening'      => __( 'Laptop bediening', 'fotoclubperspectief' ),
+			'voornaam'       => __( 'Voornaam', 'fotoclubperspectief' ),
+			'achternaam'     => __( 'Achternaam', 'fotoclubperspectief' ),
+			'lidnr_fotobond' => __( 'Lidnr fotobond', 'fotoclubperspectief' ),
+			'bar'            => __( 'Bar', 'fotoclubperspectief' ),
+			'adres'          => __( 'Adres', 'fotoclubperspectief' ),
+			'postcode'       => __( 'Postcode', 'fotoclubperspectief' ),
+			'plaats'         => __( 'Plaats', 'fotoclubperspectief' ),
+			'telefoon'       => __( 'Telefoon', 'fotoclubperspectief' ),
+			'email'          => __( 'E-mail', 'fotoclubperspectief' ),
 		);
+		foreach ( FCP_Member::commissie_werkgroep_labels() as $fcp_id => $label ) {
+			$sk             = preg_replace( '/^fcp_/', '', $fcp_id );
+			$columns[ $sk ] = $label;
+		}
 
 		if ( ! $show_contact ) {
 			unset( $columns['telefoon'], $columns['email'] );
@@ -138,8 +130,9 @@ class FCP_Shortcodes {
 		$bool_keys = self::bool_column_keys();
 
 		$bool_filter_columns = array();
+		$filter_keys         = self::bool_filter_column_keys();
 		foreach ( $columns as $key => $label ) {
-			if ( in_array( $key, $bool_keys, true ) ) {
+			if ( in_array( $key, $filter_keys, true ) ) {
 				$bool_filter_columns[ $key ] = $label;
 			}
 		}
@@ -222,26 +215,29 @@ class FCP_Shortcodes {
 	}
 
 	/**
-	 * Kolommen die als boolean (vinkje/—) worden weergegeven.
+	 * Boolean kolommen (vinkje, T voor trekker, of —).
 	 *
 	 * @return string[]
 	 */
 	private static function bool_column_keys() {
-		return array(
-			'bar',
-			'bestuur',
-			'programma_cie',
-			'tentoonstelling_cie',
-			'wedstrijden_cie',
-			'archief_foto_cie',
-			'website_cie',
-			'redactie_cie',
-			'natuur_werkgroep',
-			'portret_werkgroep',
-			'straat_werkgroep',
-			'architectuur_werkgroep',
-			'laptop_bediening',
-		);
+		$out = array( 'bar' );
+		foreach ( FCP_Member::commissie_werkgroep_field_names() as $f ) {
+			$out[] = preg_replace( '/^fcp_/', '', $f );
+		}
+		return $out;
+	}
+
+	/**
+	 * Alleen lidmaatschap (geen trekker): gebruikt voor rij-filter “Filter op rol”.
+	 *
+	 * @return string[]
+	 */
+	private static function bool_filter_column_keys() {
+		$out = array( 'bar' );
+		foreach ( FCP_Member::commissie_werkgroep_field_names() as $f ) {
+			$out[] = preg_replace( '/^fcp_/', '', $f );
+		}
+		return $out;
 	}
 
 	/**
@@ -252,7 +248,7 @@ class FCP_Shortcodes {
 	 */
 	private static function member_bool_map( $post_id ) {
 		$out = array();
-		foreach ( self::bool_column_keys() as $key ) {
+		foreach ( self::bool_filter_column_keys() as $key ) {
 			$out[ $key ] = get_post_meta( $post_id, '_fcp_' . $key, true ) === '1';
 		}
 		return $out;
@@ -268,7 +264,7 @@ class FCP_Shortcodes {
 	 */
 	private static function render_member_row( $post_id, $columns, $bool_keys, $bool_map ) {
 		$html = '<tr';
-		foreach ( self::bool_column_keys() as $bk ) {
+		foreach ( self::bool_filter_column_keys() as $bk ) {
 			$on = ! empty( $bool_map[ $bk ] );
 			$html .= ' data-fcp-bool-' . esc_attr( $bk ) . '="' . ( $on ? '1' : '0' ) . '"';
 		}
@@ -306,12 +302,26 @@ class FCP_Shortcodes {
 	 * @return string
 	 */
 	private static function cell_value( $post_id, $key ) {
-		$bool_keys = self::bool_column_keys();
-
-		if ( in_array( $key, $bool_keys, true ) ) {
-			$v = get_post_meta( $post_id, '_fcp_' . $key, true );
+		if ( 'bar' === $key ) {
+			$v = get_post_meta( $post_id, '_fcp_bar', true );
 			if ( $v === '1' ) {
 				return '<span class="fcp-ledenlijst-bool-check" role="img" aria-label="' . esc_attr__( 'Ja', 'fotoclubperspectief' ) . '">' . esc_html( "\u{2713}" ) . '</span>';
+			}
+			return '—';
+		}
+
+		$commissie_short = array();
+		foreach ( FCP_Member::commissie_werkgroep_field_names() as $f ) {
+			$commissie_short[] = preg_replace( '/^fcp_/', '', $f );
+		}
+		if ( in_array( $key, $commissie_short, true ) ) {
+			$trek = get_post_meta( $post_id, '_fcp_' . $key . '_trekker', true ) === '1';
+			$lid  = get_post_meta( $post_id, '_fcp_' . $key, true ) === '1';
+			if ( $trek ) {
+				return '<span class="fcp-ledenlijst-bool-trekker" role="img" aria-label="' . esc_attr__( 'Trekker', 'fotoclubperspectief' ) . '">T</span>';
+			}
+			if ( $lid ) {
+				return '<span class="fcp-ledenlijst-bool-check" role="img" aria-label="' . esc_attr__( 'Lid', 'fotoclubperspectief' ) . '">' . esc_html( "\u{2713}" ) . '</span>';
 			}
 			return '—';
 		}

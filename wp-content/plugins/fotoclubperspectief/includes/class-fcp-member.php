@@ -20,28 +20,58 @@ class FCP_Member {
 	 * @var array<string, string>
 	 */
 	public static function meta_keys() {
+		$commissie = self::commissie_werkgroep_field_names();
+		$trekker   = array();
+		foreach ( $commissie as $field ) {
+			$trekker[ '_' . $field . '_trekker' ] = 'bool';
+		}
+		return array_merge(
+			array(
+				'_fcp_voornaam'              => 'string',
+				'_fcp_achternaam'            => 'string',
+				'_fcp_lidnr_fotobond'        => 'string',
+				'_fcp_bar'                   => 'bool',
+				'_fcp_adres'                 => 'string',
+				'_fcp_postcode'              => 'string',
+				'_fcp_plaats'                => 'string',
+				'_fcp_telefoon'              => 'string',
+				'_fcp_email'                 => 'string',
+				'_fcp_bestuur'               => 'bool',
+				'_fcp_programma_cie'         => 'bool',
+				'_fcp_tentoonstelling_cie'   => 'bool',
+				'_fcp_wedstrijden_cie'       => 'bool',
+				'_fcp_archief_foto_cie'      => 'bool',
+				'_fcp_website_cie'           => 'bool',
+				'_fcp_redactie_cie'          => 'bool',
+				'_fcp_natuur_werkgroep'      => 'bool',
+				'_fcp_portret_werkgroep'     => 'bool',
+				'_fcp_straat_werkgroep'      => 'bool',
+				'_fcp_architectuur_werkgroep' => 'bool',
+				'_fcp_laptop_bediening'      => 'bool',
+			),
+			$trekker
+		);
+	}
+
+	/**
+	 * Commissie- en werkgroep-velden (boolean lidmaatschap), zonder bar.
+	 *
+	 * @return string[] POST/meta basenamen, bv. fcp_bestuur.
+	 */
+	public static function commissie_werkgroep_field_names() {
 		return array(
-			'_fcp_voornaam'              => 'string',
-			'_fcp_achternaam'            => 'string',
-			'_fcp_lidnr_fotobond'        => 'string',
-			'_fcp_bar'                   => 'bool',
-			'_fcp_adres'                 => 'string',
-			'_fcp_postcode'              => 'string',
-			'_fcp_plaats'                => 'string',
-			'_fcp_telefoon'              => 'string',
-			'_fcp_email'                 => 'string',
-			'_fcp_bestuur'               => 'bool',
-			'_fcp_programma_cie'         => 'bool',
-			'_fcp_tentoonstelling_cie'   => 'bool',
-			'_fcp_wedstrijden_cie'       => 'bool',
-			'_fcp_archief_foto_cie'      => 'bool',
-			'_fcp_website_cie'           => 'bool',
-			'_fcp_redactie_cie'          => 'bool',
-			'_fcp_natuur_werkgroep'      => 'bool',
-			'_fcp_portret_werkgroep'     => 'bool',
-			'_fcp_straat_werkgroep'      => 'bool',
-			'_fcp_architectuur_werkgroep' => 'bool',
-			'_fcp_laptop_bediening'      => 'bool',
+			'fcp_bestuur',
+			'fcp_programma_cie',
+			'fcp_tentoonstelling_cie',
+			'fcp_wedstrijden_cie',
+			'fcp_archief_foto_cie',
+			'fcp_website_cie',
+			'fcp_redactie_cie',
+			'fcp_natuur_werkgroep',
+			'fcp_portret_werkgroep',
+			'fcp_straat_werkgroep',
+			'fcp_architectuur_werkgroep',
+			'fcp_laptop_bediening',
 		);
 	}
 
@@ -57,6 +87,27 @@ class FCP_Member {
 		add_filter( 'manage_edit-' . self::POST_TYPE . '_sortable_columns', array( __CLASS__, 'sortable_columns' ) );
 		add_action( 'pre_get_posts', array( __CLASS__, 'admin_sort_list' ) );
 		add_filter( 'default_hidden_columns', array( __CLASS__, 'default_hidden_list_columns' ), 10, 2 );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_admin_list_styles' ) );
+	}
+
+	/**
+	 * Styling voor T / vinkje in het leden-overzicht (wp-admin).
+	 *
+	 * @param string $hook_suffix Huidig scherm.
+	 */
+	public static function enqueue_admin_list_styles( $hook_suffix ) {
+		if ( 'edit.php' !== $hook_suffix ) {
+			return;
+		}
+		if ( ! isset( $_GET['post_type'] ) || self::POST_TYPE !== sanitize_key( wp_unslash( $_GET['post_type'] ) ) ) {
+			return;
+		}
+		wp_register_style( 'fcp-member-admin-list', false, array(), '1.0' );
+		wp_enqueue_style( 'fcp-member-admin-list' );
+		wp_add_inline_style(
+			'fcp-member-admin-list',
+			'.fcp-member-bool-t{color:#1d8f3a;font-weight:700;font-size:1.08em}.fcp-member-bool-ok{color:#1d8f3a;font-weight:700;font-size:1.08em}'
+		);
 	}
 
 	/**
@@ -81,28 +132,42 @@ class FCP_Member {
 	 * @return array<string,string> Kolom-ID => label.
 	 */
 	private static function admin_list_columns() {
+		$cols = array(
+			'fcp_voornaam'   => __( 'Voornaam', 'fotoclubperspectief' ),
+			'fcp_achternaam' => __( 'Achternaam', 'fotoclubperspectief' ),
+			'fcp_lidnr'      => __( 'Lidnr fotobond', 'fotoclubperspectief' ),
+			'fcp_bar'        => __( 'Bar', 'fotoclubperspectief' ),
+			'fcp_adres'      => __( 'Adres', 'fotoclubperspectief' ),
+			'fcp_postcode'   => __( 'Postcode', 'fotoclubperspectief' ),
+			'fcp_plaats'     => __( 'Plaats', 'fotoclubperspectief' ),
+			'fcp_telefoon'   => __( 'Telefoon', 'fotoclubperspectief' ),
+			'fcp_email'      => __( 'E-mail', 'fotoclubperspectief' ),
+		);
+		foreach ( self::commissie_werkgroep_labels() as $id => $label ) {
+			$cols[ $id ] = $label;
+		}
+		return $cols;
+	}
+
+	/**
+	 * Commissie/werkgroep: kolom-id (fcp_…) => korte label.
+	 *
+	 * @return array<string,string>
+	 */
+	public static function commissie_werkgroep_labels() {
 		return array(
-			'fcp_voornaam'              => __( 'Voornaam', 'fotoclubperspectief' ),
-			'fcp_achternaam'            => __( 'Achternaam', 'fotoclubperspectief' ),
-			'fcp_lidnr'                 => __( 'Lidnr fotobond', 'fotoclubperspectief' ),
-			'fcp_bar'                   => __( 'Bar', 'fotoclubperspectief' ),
-			'fcp_adres'                 => __( 'Adres', 'fotoclubperspectief' ),
-			'fcp_postcode'              => __( 'Postcode', 'fotoclubperspectief' ),
-			'fcp_plaats'                => __( 'Plaats', 'fotoclubperspectief' ),
-			'fcp_telefoon'              => __( 'Telefoon', 'fotoclubperspectief' ),
-			'fcp_email'                 => __( 'E-mail', 'fotoclubperspectief' ),
-			'fcp_bestuur'               => __( 'Bestuur', 'fotoclubperspectief' ),
-			'fcp_programma_cie'         => __( 'Programma cie', 'fotoclubperspectief' ),
-			'fcp_tentoonstelling_cie'   => __( 'Tentoonstelling cie', 'fotoclubperspectief' ),
-			'fcp_wedstrijden_cie'       => __( 'Wedstrijden cie', 'fotoclubperspectief' ),
-			'fcp_archief_foto_cie'      => __( 'Archief foto cie', 'fotoclubperspectief' ),
-			'fcp_website_cie'           => __( 'Website cie', 'fotoclubperspectief' ),
-			'fcp_redactie_cie'          => __( 'Redactie cie', 'fotoclubperspectief' ),
-			'fcp_natuur_werkgroep'      => __( 'Natuur werkgroep', 'fotoclubperspectief' ),
-			'fcp_portret_werkgroep'     => __( 'Portret werkgroep', 'fotoclubperspectief' ),
-			'fcp_straat_werkgroep'      => __( 'Straat werkgroep', 'fotoclubperspectief' ),
+			'fcp_bestuur'                => __( 'Bestuur', 'fotoclubperspectief' ),
+			'fcp_programma_cie'          => __( 'Programma cie', 'fotoclubperspectief' ),
+			'fcp_tentoonstelling_cie'    => __( 'Tentoonstelling cie', 'fotoclubperspectief' ),
+			'fcp_wedstrijden_cie'        => __( 'Wedstrijden cie', 'fotoclubperspectief' ),
+			'fcp_archief_foto_cie'       => __( 'Archief foto cie', 'fotoclubperspectief' ),
+			'fcp_website_cie'            => __( 'Website cie', 'fotoclubperspectief' ),
+			'fcp_redactie_cie'           => __( 'Redactie cie', 'fotoclubperspectief' ),
+			'fcp_natuur_werkgroep'       => __( 'Natuur werkgroep', 'fotoclubperspectief' ),
+			'fcp_portret_werkgroep'      => __( 'Portret werkgroep', 'fotoclubperspectief' ),
+			'fcp_straat_werkgroep'       => __( 'Straat werkgroep', 'fotoclubperspectief' ),
 			'fcp_architectuur_werkgroep' => __( 'Architectuur werkgroep', 'fotoclubperspectief' ),
-			'fcp_laptop_bediening'      => __( 'Laptop bediening', 'fotoclubperspectief' ),
+			'fcp_laptop_bediening'       => __( 'Laptop bediening', 'fotoclubperspectief' ),
 		);
 	}
 
@@ -243,29 +308,28 @@ class FCP_Member {
 			</tbody>
 		</table>
 		<h4><?php esc_html_e( 'Commissies en werkgroepen', 'fotoclubperspectief' ); ?></h4>
+		<p class="description"><?php esc_html_e( 'Per rij: Lid van de groep, en optioneel Trekker (alleen zinvol als iemand lid is).', 'fotoclubperspectief' ); ?></p>
 		<table class="form-table">
 			<tbody>
 				<?php
-				$checks = array(
-					'fcp_bestuur'               => __( 'Bestuur', 'fotoclubperspectief' ),
-					'fcp_programma_cie'         => __( 'Programma cie', 'fotoclubperspectief' ),
-					'fcp_tentoonstelling_cie'   => __( 'Tentoonstelling cie', 'fotoclubperspectief' ),
-					'fcp_wedstrijden_cie'       => __( 'Wedstrijden cie', 'fotoclubperspectief' ),
-					'fcp_archief_foto_cie'      => __( 'Archief foto cie', 'fotoclubperspectief' ),
-					'fcp_website_cie'           => __( 'Website cie', 'fotoclubperspectief' ),
-					'fcp_redactie_cie'          => __( 'Redactie cie', 'fotoclubperspectief' ),
-					'fcp_natuur_werkgroep'      => __( 'Natuur werkgroep', 'fotoclubperspectief' ),
-					'fcp_portret_werkgroep'     => __( 'Portret werkgroep', 'fotoclubperspectief' ),
-					'fcp_straat_werkgroep'      => __( 'Straat werkgroep', 'fotoclubperspectief' ),
-					'fcp_architectuur_werkgroep' => __( 'Architectuur werkgroep', 'fotoclubperspectief' ),
-					'fcp_laptop_bediening'      => __( 'Laptop bediening', 'fotoclubperspectief' ),
-				);
-				foreach ( $checks as $name => $label ) {
-					$key = '_' . $name;
+				foreach ( self::commissie_werkgroep_labels() as $name => $label ) {
+					$key_lid = '_' . $name;
+					$key_tr  = '_' . $name . '_trekker';
 					?>
 					<tr>
 						<th><?php echo esc_html( $label ); ?></th>
-						<td><label><input type="checkbox" name="<?php echo esc_attr( $name ); ?>" value="1" <?php checked( get_post_meta( $post->ID, $key, true ), '1' ); ?> /> <?php esc_html_e( 'Ja', 'fotoclubperspectief' ); ?></label></td>
+						<td>
+							<p class="fcp-member-role-checks">
+								<label>
+									<input type="checkbox" name="<?php echo esc_attr( $name ); ?>" value="1" <?php checked( get_post_meta( $post->ID, $key_lid, true ), '1' ); ?> />
+									<?php esc_html_e( 'Lid', 'fotoclubperspectief' ); ?>
+								</label><br />
+								<label>
+									<input type="checkbox" name="<?php echo esc_attr( $name ); ?>_trekker" value="1" <?php checked( get_post_meta( $post->ID, $key_tr, true ), '1' ); ?> />
+									<?php esc_html_e( 'Trekker', 'fotoclubperspectief' ); ?>
+								</label>
+							</p>
+						</td>
 					</tr>
 					<?php
 				}
@@ -305,22 +369,12 @@ class FCP_Member {
 		update_post_meta( $post_id, '_fcp_telefoon', isset( $_POST['fcp_telefoon'] ) ? sanitize_text_field( wp_unslash( $_POST['fcp_telefoon'] ) ) : '' );
 		update_post_meta( $post_id, '_fcp_email', isset( $_POST['fcp_email'] ) ? sanitize_email( wp_unslash( $_POST['fcp_email'] ) ) : '' );
 
-		$bool_fields = array(
-			'fcp_bestuur',
-			'fcp_programma_cie',
-			'fcp_tentoonstelling_cie',
-			'fcp_wedstrijden_cie',
-			'fcp_archief_foto_cie',
-			'fcp_website_cie',
-			'fcp_redactie_cie',
-			'fcp_natuur_werkgroep',
-			'fcp_portret_werkgroep',
-			'fcp_straat_werkgroep',
-			'fcp_architectuur_werkgroep',
-			'fcp_laptop_bediening',
-		);
-		foreach ( $bool_fields as $field ) {
-			update_post_meta( $post_id, '_' . $field, ! empty( $_POST[ $field ] ) ? '1' : '0' );
+		foreach ( self::commissie_werkgroep_field_names() as $field ) {
+			$lid = ! empty( $_POST[ $field ] );
+			update_post_meta( $post_id, '_' . $field, $lid ? '1' : '0' );
+			$trek_field = $field . '_trekker';
+			$trek       = $lid && ! empty( $_POST[ $trek_field ] );
+			update_post_meta( $post_id, '_' . $trek_field, $trek ? '1' : '0' );
 		}
 
 		$title = trim( $voornaam . ' ' . $achternaam );
@@ -385,23 +439,22 @@ class FCP_Member {
 			return;
 		}
 
-		$bool_map = array(
-			'fcp_bestuur'               => '_fcp_bestuur',
-			'fcp_programma_cie'         => '_fcp_programma_cie',
-			'fcp_tentoonstelling_cie'   => '_fcp_tentoonstelling_cie',
-			'fcp_wedstrijden_cie'       => '_fcp_wedstrijden_cie',
-			'fcp_archief_foto_cie'      => '_fcp_archief_foto_cie',
-			'fcp_website_cie'           => '_fcp_website_cie',
-			'fcp_redactie_cie'          => '_fcp_redactie_cie',
-			'fcp_natuur_werkgroep'      => '_fcp_natuur_werkgroep',
-			'fcp_portret_werkgroep'     => '_fcp_portret_werkgroep',
-			'fcp_straat_werkgroep'      => '_fcp_straat_werkgroep',
-			'fcp_architectuur_werkgroep' => '_fcp_architectuur_werkgroep',
-			'fcp_laptop_bediening'      => '_fcp_laptop_bediening',
-		);
-		if ( isset( $bool_map[ $column ] ) ) {
-			$v = get_post_meta( $post_id, $bool_map[ $column ], true );
-			echo '1' === $v ? esc_html__( 'Ja', 'fotoclubperspectief' ) : '—';
+		foreach ( self::commissie_werkgroep_labels() as $col_id => $_label ) {
+			if ( $column !== $col_id ) {
+				continue;
+			}
+			$lid  = get_post_meta( $post_id, '_' . $col_id, true ) === '1';
+			$trek = get_post_meta( $post_id, '_' . $col_id . '_trekker', true ) === '1';
+			if ( $trek ) {
+				echo '<span class="fcp-member-bool-t" role="img" aria-label="' . esc_attr__( 'Trekker', 'fotoclubperspectief' ) . '">T</span>';
+				return;
+			}
+			if ( $lid ) {
+				echo '<span class="fcp-member-bool-ok" role="img" aria-label="' . esc_attr__( 'Lid', 'fotoclubperspectief' ) . '">' . esc_html( "\u{2713}" ) . '</span>';
+				return;
+			}
+			echo '—';
+			return;
 		}
 	}
 

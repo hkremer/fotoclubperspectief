@@ -181,6 +181,18 @@ class FCP_Member_Import {
 			'straat werkgr'            => 'fcp_straat_werkgroep',
 			'architectuur'             => 'fcp_architectuur_werkgroep',
 			'laptop bedienen'          => 'fcp_laptop_bediening',
+			'bestuur trekker'          => 'fcp_bestuur_trekker',
+			'programma cie trekker'    => 'fcp_programma_cie_trekker',
+			'tentoonstelling cie trekker' => 'fcp_tentoonstelling_cie_trekker',
+			'wedstrijden cie trekker'  => 'fcp_wedstrijden_cie_trekker',
+			'archief foto cie trekker' => 'fcp_archief_foto_cie_trekker',
+			'website cie trekker'      => 'fcp_website_cie_trekker',
+			'redactie cie trekker'     => 'fcp_redactie_cie_trekker',
+			'natuur werkgroep trekker' => 'fcp_natuur_werkgroep_trekker',
+			'portret werkgroep trekker' => 'fcp_portret_werkgroep_trekker',
+			'straat werkgroep trekker' => 'fcp_straat_werkgroep_trekker',
+			'architectuur werkgroep trekker' => 'fcp_architectuur_werkgroep_trekker',
+			'laptop bediening trekker' => 'fcp_laptop_bediening_trekker',
 		);
 
 		if ( isset( $exact[ $h ] ) ) {
@@ -244,28 +256,20 @@ class FCP_Member_Import {
 		$email      = self::first_email_from_cell( $email_raw );
 
 		$data = array(
-			'voornaam'              => $voornaam,
-			'achternaam'            => $achternaam,
-			'lidnr_fotobond'        => $lidnr,
-			'bar'                   => self::parse_bool_cell( $get( 'bar' ) ),
-			'adres'                 => sanitize_text_field( $get( 'adres' ) ),
-			'postcode'              => sanitize_text_field( trim( $get( 'postcode' ) ) ),
-			'plaats'                => sanitize_text_field( $get( 'plaats' ) ),
-			'telefoon'              => sanitize_text_field( trim( $get( 'telefoon' ) ) ),
-			'email'                 => $email,
-			'fcp_bestuur'           => self::parse_bool_cell( $get( 'fcp_bestuur' ) ),
-			'fcp_programma_cie'     => self::parse_bool_cell( $get( 'fcp_programma_cie' ) ),
-			'fcp_tentoonstelling_cie' => self::parse_bool_cell( $get( 'fcp_tentoonstelling_cie' ) ),
-			'fcp_wedstrijden_cie'   => self::parse_bool_cell( $get( 'fcp_wedstrijden_cie' ) ),
-			'fcp_archief_foto_cie'  => self::parse_bool_cell( $get( 'fcp_archief_foto_cie' ) ),
-			'fcp_website_cie'       => self::parse_bool_cell( $get( 'fcp_website_cie' ) ),
-			'fcp_redactie_cie'      => self::parse_bool_cell( $get( 'fcp_redactie_cie' ) ),
-			'fcp_natuur_werkgroep'  => self::parse_bool_cell( $get( 'fcp_natuur_werkgroep' ) ),
-			'fcp_portret_werkgroep' => self::parse_bool_cell( $get( 'fcp_portret_werkgroep' ) ),
-			'fcp_straat_werkgroep'  => self::parse_bool_cell( $get( 'fcp_straat_werkgroep' ) ),
-			'fcp_architectuur_werkgroep' => self::parse_bool_cell( $get( 'fcp_architectuur_werkgroep' ) ),
-			'fcp_laptop_bediening'  => self::parse_bool_cell( $get( 'fcp_laptop_bediening' ) ),
+			'voornaam'       => $voornaam,
+			'achternaam'     => $achternaam,
+			'lidnr_fotobond' => $lidnr,
+			'bar'            => self::parse_bool_cell( $get( 'bar' ) ),
+			'adres'          => sanitize_text_field( $get( 'adres' ) ),
+			'postcode'       => sanitize_text_field( trim( $get( 'postcode' ) ) ),
+			'plaats'         => sanitize_text_field( $get( 'plaats' ) ),
+			'telefoon'       => sanitize_text_field( trim( $get( 'telefoon' ) ) ),
+			'email'          => $email,
 		);
+		foreach ( FCP_Member::commissie_werkgroep_field_names() as $f ) {
+			$data[ $f ]                = self::parse_bool_cell( $get( $f ) );
+			$data[ $f . '_trekker' ]    = self::parse_bool_cell( $get( $f . '_trekker' ) );
+		}
 
 		return $data;
 	}
@@ -442,22 +446,11 @@ class FCP_Member_Import {
 		update_post_meta( $post_id, '_fcp_telefoon', $data['telefoon'] );
 		update_post_meta( $post_id, '_fcp_email', $data['email'] );
 
-		$bool_fields = array(
-			'fcp_bestuur',
-			'fcp_programma_cie',
-			'fcp_tentoonstelling_cie',
-			'fcp_wedstrijden_cie',
-			'fcp_archief_foto_cie',
-			'fcp_website_cie',
-			'fcp_redactie_cie',
-			'fcp_natuur_werkgroep',
-			'fcp_portret_werkgroep',
-			'fcp_straat_werkgroep',
-			'fcp_architectuur_werkgroep',
-			'fcp_laptop_bediening',
-		);
-		foreach ( $bool_fields as $field ) {
-			update_post_meta( $post_id, '_' . $field, ! empty( $data[ $field ] ) ? '1' : '0' );
+		foreach ( FCP_Member::commissie_werkgroep_field_names() as $field ) {
+			$lid = ! empty( $data[ $field ] );
+			update_post_meta( $post_id, '_' . $field, $lid ? '1' : '0' );
+			$tf = $field . '_trekker';
+			update_post_meta( $post_id, '_' . $tf, ( $lid && ! empty( $data[ $tf ] ) ) ? '1' : '0' );
 		}
 	}
 
