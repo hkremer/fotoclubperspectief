@@ -54,6 +54,105 @@ class FCP_Member {
 	}
 
 	/**
+	 * Werkgroep-velden (boolean lidmaatschap).
+	 *
+	 * @return string[] POST/meta basenamen, bv. fcp_natuur_werkgroep.
+	 */
+	public static function werkgroep_field_names() {
+		return array(
+			'fcp_natuur_werkgroep',
+			'fcp_portret_werkgroep',
+			'fcp_straat_werkgroep',
+			'fcp_architectuur_werkgroep',
+		);
+	}
+
+	/**
+	 * Werkgroep: kolom-id (fcp_…) => label.
+	 *
+	 * @return array<string,string>
+	 */
+	public static function werkgroep_labels() {
+		return array_intersect_key(
+			self::commissie_werkgroep_labels(),
+			array_flip( self::werkgroep_field_names() )
+		);
+	}
+
+	/**
+	 * Resolve a shortcode/group slug to a werkgroep meta field name.
+	 *
+	 * Accepts bv. "natuur", "natuur_werkgroep", "fcp_natuur_werkgroep".
+	 *
+	 * @param string $groep Raw group slug.
+	 * @return string Field name without leading underscore, or empty if unknown.
+	 */
+	public static function resolve_werkgroep_field( $groep ) {
+		$groep = strtolower( trim( (string) $groep ) );
+		$groep = str_replace( array( '-', ' ' ), '_', $groep );
+
+		if ( '' === $groep ) {
+			return '';
+		}
+
+		$aliases = array(
+			'natuur'       => 'fcp_natuur_werkgroep',
+			'portret'      => 'fcp_portret_werkgroep',
+			'straat'       => 'fcp_straat_werkgroep',
+			'architectuur' => 'fcp_architectuur_werkgroep',
+		);
+
+		foreach ( self::werkgroep_field_names() as $field ) {
+			$aliases[ $field ]                         = $field;
+			$aliases[ preg_replace( '/^fcp_/', '', $field ) ] = $field;
+		}
+
+		if ( ! isset( $aliases[ $groep ] ) ) {
+			return '';
+		}
+
+		return $aliases[ $groep ];
+	}
+
+	/**
+	 * Leden ophalen die lid zijn van een werkgroep of commissie.
+	 *
+	 * @param string $field_name Field name without leading underscore, bv. fcp_natuur_werkgroep.
+	 * @param string $sort_by    'achternaam' (standaard) of 'voornaam'.
+	 * @return WP_Post[]
+	 */
+	public static function get_members_by_group( $field_name, $sort_by = 'achternaam' ) {
+		if ( ! in_array( $field_name, self::commissie_werkgroep_field_names(), true ) ) {
+			return array();
+		}
+
+		$keys = array(
+			'achternaam' => '_fcp_achternaam',
+			'voornaam'   => '_fcp_voornaam',
+		);
+		$meta_key = isset( $keys[ $sort_by ] ) ? $keys[ $sort_by ] : '_fcp_achternaam';
+
+		$q = new WP_Query(
+			array(
+				'post_type'      => self::POST_TYPE,
+				'post_status'    => 'publish',
+				'posts_per_page' => -1,
+				'orderby'        => 'meta_value',
+				'meta_key'       => $meta_key,
+				'order'          => 'ASC',
+				'meta_query'     => array(
+					array(
+						'key'   => '_' . $field_name,
+						'value' => '1',
+					),
+				),
+			)
+		);
+
+		return $q->posts;
+	}
+
+	/**
 	 * Commissie- en werkgroep-velden (boolean lidmaatschap), zonder bar.
 	 *
 	 * @return string[] POST/meta basenamen, bv. fcp_bestuur.

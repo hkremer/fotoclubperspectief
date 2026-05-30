@@ -26,6 +26,7 @@ class FCP_Shortcodes {
 		add_shortcode( 'fcp_ledenlijst', array( __CLASS__, 'ledenlijst' ) );
 		add_shortcode( 'fcp_agenda', array( __CLASS__, 'agenda' ) );
 		add_shortcode( 'fcp_login', array( __CLASS__, 'login_form' ) );
+		add_shortcode( 'fcp_werkgroep', array( __CLASS__, 'werkgroep_leden' ) );
 		add_action( 'init', array( __CLASS__, 'maybe_process_login' ), 20 );
 		add_action( 'wp', array( __CLASS__, 'maybe_redirect_logged_in_from_login_page' ) );
 		add_action( 'wp', array( __CLASS__, 'maybe_mark_ledenlijst_noindex' ) );
@@ -194,6 +195,70 @@ class FCP_Shortcodes {
 				<button type="submit" class="fcp-login-submit button"><?php esc_html_e( 'Inloggen', 'fotoclubperspectief' ); ?></button>
 			</p>
 		</form>
+		<?php
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Shortcode [fcp_werkgroep groep="natuur" sort="achternaam"]
+	 *
+	 * Toont voornaam + achternaam van leden in een werkgroep.
+	 *
+	 * @param array $atts Attributes.
+	 * @return string
+	 */
+	public static function werkgroep_leden( $atts ) {
+		if ( ! class_exists( 'FCP_Member' ) ) {
+			return '<p class="fcp-werkgroep-missing">' . esc_html__( 'Activeer de plugin Fotoclub Perspectief.', 'fotoclubperspectief' ) . '</p>';
+		}
+
+		$atts = shortcode_atts(
+			array(
+				'groep' => '',
+				'sort'  => 'achternaam',
+			),
+			$atts,
+			'fcp_werkgroep'
+		);
+
+		$field = FCP_Member::resolve_werkgroep_field( $atts['groep'] );
+		if ( '' === $field ) {
+			return '<p class="fcp-werkgroep-error">' . esc_html__( 'Onbekende werkgroep. Gebruik bijvoorbeeld: [fcp_werkgroep groep="natuur"]', 'fotoclubperspectief' ) . '</p>';
+		}
+
+		$sort_by = ( 'voornaam' === strtolower( (string) $atts['sort'] ) ) ? 'voornaam' : 'achternaam';
+		$members = FCP_Member::get_members_by_group( $field, $sort_by );
+
+		if ( empty( $members ) ) {
+			return '<p class="fcp-werkgroep-empty">' . esc_html__( 'Geen leden gevonden in deze werkgroep.', 'fotoclubperspectief' ) . '</p>';
+		}
+
+		$labels = FCP_Member::werkgroep_labels();
+		$label  = isset( $labels[ $field ] ) ? $labels[ $field ] : '';
+
+		ob_start();
+		?>
+		<div class="fcp-werkgroep-leden" data-fcp-werkgroep="<?php echo esc_attr( preg_replace( '/^fcp_/', '', $field ) ); ?>">
+			<?php if ( $label ) : ?>
+				<p class="fcp-werkgroep-leden-heading screen-reader-text"><?php echo esc_html( $label ); ?></p>
+			<?php endif; ?>
+			<ul class="fcp-werkgroep-leden-list">
+				<?php
+				foreach ( $members as $member ) {
+					$voornaam   = trim( (string) get_post_meta( $member->ID, '_fcp_voornaam', true ) );
+					$achternaam = trim( (string) get_post_meta( $member->ID, '_fcp_achternaam', true ) );
+					$name       = trim( $voornaam . ' ' . $achternaam );
+					if ( '' === $name ) {
+						$name = get_the_title( $member );
+					}
+					if ( '' === $name ) {
+						continue;
+					}
+					echo '<li>' . esc_html( $name ) . '</li>';
+				}
+				?>
+			</ul>
+		</div>
 		<?php
 		return (string) ob_get_clean();
 	}

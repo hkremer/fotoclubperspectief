@@ -241,3 +241,23 @@ table.fcp-ledenlijst tbody tr.fcp-ledenlijst-tr--alt {
 .fcp-login-logged-in {
 	margin: 1em 0;
 }
+
+/* Werkgroep leden shortcode */
+.fcp-werkgroep-leden {
+	margin: 1em 0;
+}
+
+.fcp-werkgroep-leden-list {
+	margin: 0;
+	padding-left: 1.25rem;
+}
+
+.fcp-werkgroep-leden-list li {
+	margin-bottom: 0.35rem;
+}
+
+.fcp-werkgroep-empty,
+.fcp-werkgroep-error,
+.fcp-werkgroep-missing {
+	margin: 1em 0;
+}
