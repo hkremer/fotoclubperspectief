@@ -219,6 +219,7 @@ class FCP_Agenda {
 				<tr>
 					<th><label for="fcp_beschrijving"><?php esc_html_e( 'Beschrijving', 'fotoclubperspectief' ); ?></label></th>
 					<td>
+					<p class="description"><?php esc_html_e( 'Gebruik altijd een bullet lijst.', 'fotoclubperspectief' ); ?></p>
 						<?php
 						wp_editor(
 							$beschrijving,
@@ -231,7 +232,6 @@ class FCP_Agenda {
 							)
 						);
 						?>
-						<p class="description"><?php esc_html_e( 'Gebruik een lijst voor opsommingen.', 'fotoclubperspectief' ); ?></p>
 					</td>
 				</tr>
 				<tr>
