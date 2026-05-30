@@ -169,3 +169,75 @@ table.fcp-ledenlijst tbody tr.fcp-ledenlijst-tr--alt {
 .fcp-ledenlijst-empty {
 	margin: 1em 0;
 }
+
+/* Login shortcode */
+.fcp-login-form {
+	max-width: 24rem;
+	margin: 1.5rem 0;
+	padding: 1.25rem 1.5rem;
+	background: #f7f7f7;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+}
+
+.fcp-login-error {
+	margin: 0 0 1rem;
+	padding: 0.65rem 0.85rem;
+	background: #fce4e4;
+	border: 1px solid #e4a9a9;
+	border-radius: 4px;
+	color: #8a1f1f;
+}
+
+.fcp-login-field {
+	margin: 0 0 1rem;
+}
+
+.fcp-login-field label {
+	display: block;
+	margin-bottom: 0.35rem;
+	font-weight: 600;
+}
+
+.fcp-login-input {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+	padding: 0.5rem 0.65rem;
+	border: 1px solid #bbb;
+	border-radius: 4px;
+	font-size: 1rem;
+	box-sizing: border-box;
+}
+
+.fcp-login-field--remember {
+	margin-bottom: 0.75rem;
+}
+
+.fcp-login-remember {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	font-weight: 400;
+	cursor: pointer;
+}
+
+.fcp-login-field--honeypot {
+	position: absolute;
+	left: -9999px;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+}
+
+.fcp-login-actions {
+	margin: 0;
+}
+
+.fcp-login-submit {
+	cursor: pointer;
+}
+
+.fcp-login-logged-in {
+	margin: 1em 0;
+}

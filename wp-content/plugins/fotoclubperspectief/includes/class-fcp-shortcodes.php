@@ -13,12 +13,189 @@ defined( 'ABSPATH' ) || exit;
 class FCP_Shortcodes {
 
 	/**
+	 * Login error message after a failed attempt.
+	 *
+	 * @var string
+	 */
+	private static $login_error = '';
+
+	/**
 	 * Init.
 	 */
 	public static function init() {
 		add_shortcode( 'fcp_ledenlijst', array( __CLASS__, 'ledenlijst' ) );
 		add_shortcode( 'fcp_agenda', array( __CLASS__, 'agenda' ) );
+		add_shortcode( 'fcp_login', array( __CLASS__, 'login_form' ) );
+		add_action( 'init', array( __CLASS__, 'maybe_process_login' ), 20 );
+		add_action( 'wp', array( __CLASS__, 'maybe_redirect_logged_in_from_login_page' ) );
 		add_action( 'wp', array( __CLASS__, 'maybe_mark_ledenlijst_noindex' ) );
+	}
+
+	/**
+	 * Default redirect URL after login.
+	 *
+	 * @return string
+	 */
+	private static function default_login_redirect_url() {
+		return (string) home_url( '/info' );
+	}
+
+	/**
+	 * Sanitize a redirect target from shortcode attributes or POST data.
+	 *
+	 * @param string $redirect Raw redirect value.
+	 * @return string
+	 */
+	private static function sanitize_login_redirect( $redirect ) {
+		$redirect = trim( (string) $redirect );
+		if ( '' === $redirect ) {
+			return self::default_login_redirect_url();
+		}
+
+		if ( 0 !== strpos( $redirect, 'http' ) ) {
+			$redirect = home_url( $redirect );
+		}
+
+		$validated = wp_validate_redirect( $redirect, self::default_login_redirect_url() );
+		return $validated ? $validated : self::default_login_redirect_url();
+	}
+
+	/**
+	 * Redirect logged-in users away from pages that only show the login form.
+	 */
+	public static function maybe_redirect_logged_in_from_login_page() {
+		if ( ! is_user_logged_in() || ! is_singular() ) {
+			return;
+		}
+
+		$post = get_queried_object();
+		if ( ! ( $post instanceof WP_Post ) || ! has_shortcode( (string) $post->post_content, 'fcp_login' ) ) {
+			return;
+		}
+
+		wp_safe_redirect( self::default_login_redirect_url() );
+		exit;
+	}
+
+	/**
+	 * Process login form submission.
+	 */
+	public static function maybe_process_login() {
+		if ( 'POST' !== ( $_SERVER['REQUEST_METHOD'] ?? '' ) ) {
+			return;
+		}
+
+		if ( empty( $_POST['fcp_login'] ) || empty( $_POST['fcp_login_nonce'] ) ) {
+			return;
+		}
+
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['fcp_login_nonce'] ) ), 'fcp_login' ) ) {
+			self::$login_error = __( 'Beveiligingscontrole mislukt. Probeer het opnieuw.', 'fotoclubperspectief' );
+			return;
+		}
+
+		if ( is_user_logged_in() ) {
+			wp_safe_redirect( self::default_login_redirect_url() );
+			exit;
+		}
+
+		// Honeypot: bots that fill hidden fields are rejected silently.
+		if ( ! empty( $_POST['fcp_login_url'] ) ) {
+			return;
+		}
+
+		$username = isset( $_POST['log'] ) ? sanitize_user( wp_unslash( $_POST['log'] ) ) : '';
+		$password = isset( $_POST['pwd'] ) ? (string) wp_unslash( $_POST['pwd'] ) : '';
+		$remember = ! empty( $_POST['rememberme'] );
+
+		if ( '' === $username || '' === $password ) {
+			self::$login_error = __( 'Vul gebruikersnaam en wachtwoord in.', 'fotoclubperspectief' );
+			return;
+		}
+
+		$redirect = self::sanitize_login_redirect(
+			isset( $_POST['redirect_to'] ) ? wp_unslash( $_POST['redirect_to'] ) : ''
+		);
+
+		$user = wp_signon(
+			array(
+				'user_login'    => $username,
+				'user_password' => $password,
+				'remember'      => $remember,
+			),
+			is_ssl()
+		);
+
+		if ( is_wp_error( $user ) ) {
+			self::$login_error = wp_strip_all_tags( $user->get_error_message() );
+			return;
+		}
+
+		wp_safe_redirect( $redirect );
+		exit;
+	}
+
+	/**
+	 * Shortcode [fcp_login redirect="/info"]
+	 *
+	 * @param array $atts Attributes.
+	 * @return string
+	 */
+	public static function login_form( $atts ) {
+		if ( is_user_logged_in() ) {
+			return '<p class="fcp-login-logged-in">' . esc_html__( 'Je bent al ingelogd.', 'fotoclubperspectief' ) . '</p>';
+		}
+
+		$atts = shortcode_atts(
+			array(
+				'redirect' => '/info',
+			),
+			$atts,
+			'fcp_login'
+		);
+
+		$redirect = self::sanitize_login_redirect( $atts['redirect'] );
+		$error    = self::$login_error;
+
+		ob_start();
+		?>
+		<form class="fcp-login-form" method="post" action="<?php echo esc_url( get_permalink() ); ?>" novalidate>
+			<?php if ( $error ) : ?>
+				<p class="fcp-login-error" role="alert"><?php echo esc_html( $error ); ?></p>
+			<?php endif; ?>
+
+			<p class="fcp-login-field">
+				<label for="fcp-login-user"><?php esc_html_e( 'Gebruikersnaam of e-mailadres', 'fotoclubperspectief' ); ?></label>
+				<input type="text" name="log" id="fcp-login-user" class="fcp-login-input" autocomplete="username" required />
+			</p>
+
+			<p class="fcp-login-field">
+				<label for="fcp-login-pass"><?php esc_html_e( 'Wachtwoord', 'fotoclubperspectief' ); ?></label>
+				<input type="password" name="pwd" id="fcp-login-pass" class="fcp-login-input" autocomplete="current-password" required />
+			</p>
+
+			<p class="fcp-login-field fcp-login-field--remember">
+				<label class="fcp-login-remember">
+					<input type="checkbox" name="rememberme" value="forever" />
+					<?php esc_html_e( 'Onthoud mij', 'fotoclubperspectief' ); ?>
+				</label>
+			</p>
+
+			<p class="fcp-login-field fcp-login-field--honeypot" aria-hidden="true">
+				<label for="fcp-login-url"><?php esc_html_e( 'Laat dit veld leeg', 'fotoclubperspectief' ); ?></label>
+				<input type="text" name="fcp_login_url" id="fcp-login-url" class="fcp-login-input" tabindex="-1" autocomplete="off" />
+			</p>
+
+			<input type="hidden" name="redirect_to" value="<?php echo esc_attr( $redirect ); ?>" />
+			<input type="hidden" name="fcp_login" value="1" />
+			<?php wp_nonce_field( 'fcp_login', 'fcp_login_nonce' ); ?>
+
+			<p class="fcp-login-actions">
+				<button type="submit" class="fcp-login-submit button"><?php esc_html_e( 'Inloggen', 'fotoclubperspectief' ); ?></button>
+			</p>
+		</form>
+		<?php
+		return (string) ob_get_clean();
 	}
 
 	/**
