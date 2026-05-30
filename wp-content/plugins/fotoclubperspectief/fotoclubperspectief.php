@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Fotoclub Perspectief
  * Description:       Ledenlijst, agenda en homepage-instellingen voor Fotoclub Perspectief.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Fotoclub Perspectief
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'FCP_VERSION', '1.0.0' );
+define( 'FCP_VERSION', '1.0.1' );
 define( 'FCP_PLUGIN_FILE', __FILE__ );
 define( 'FCP_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'FCP_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

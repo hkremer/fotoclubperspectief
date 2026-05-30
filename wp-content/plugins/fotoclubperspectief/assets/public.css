@@ -148,12 +148,13 @@ table.fcp-ledenlijst tbody td.fcp-ledenlijst-col--bool {
 	line-height: 1;
 }
 
-/* Trekker in dezelfde kolom als lidmaatschap (groene T i.p.v. vinkje). */
-.fcp-ledenlijst-bool-trekker {
-	color: #1e7b2e;
-	font-weight: 700;
-	font-size: 1.15em;
+/* Trekker: vet + groen (specificiteit t.o.v. thema). */
+table.fcp-ledenlijst td .fcp-ledenlijst-bool-trekker {
+	color: #157a1f !important;
+	font-weight: 800 !important;
+	font-size: 1.2em;
 	line-height: 1;
+	display: inline-block;
 }
 
 /* Om-en-om alleen over zichtbare rijen (na filter via JS: .fcp-ledenlijst-tr--alt). */
